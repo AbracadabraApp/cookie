@@ -1,10 +1,13 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { recipes } from '../data/recipes';
 import { consolidateShoppingList } from '../utils/shoppingListUtils';
 import ShoppingList from '../components/ShoppingList';
+import RecipeDetail from '../components/RecipeDetail';
 import './Demo.css';
 
 function Demo() {
+  const [selectedRecipe, setSelectedRecipe] = useState(null);
+
   const { needToShop, mayHaveOnHand } = useMemo(
     () => consolidateShoppingList(recipes),
     []
@@ -22,7 +25,11 @@ function Demo() {
           <h2>Selected Recipes</h2>
           <div className="recipe-cards">
             {recipes.map(recipe => (
-              <div key={recipe.id} className="recipe-card">
+              <div
+                key={recipe.id}
+                className="recipe-card"
+                onClick={() => setSelectedRecipe(recipe)}
+              >
                 <h3>{recipe.title}</h3>
                 <p className="recipe-description">{recipe.description}</p>
                 <div className="recipe-meta">
@@ -36,6 +43,7 @@ function Demo() {
                     </span>
                   ))}
                 </div>
+                <p className="recipe-card-hint">Click to view full recipe</p>
               </div>
             ))}
           </div>
@@ -47,6 +55,10 @@ function Demo() {
           recipeCount={recipes.length}
         />
       </main>
+
+      {selectedRecipe && (
+        <RecipeDetail recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />
+      )}
     </div>
   );
 }

@@ -5,6 +5,8 @@ export const recipes = [
     title: "Pasta With Spicy 'Nduja-Tomato Sauce",
     description:
       "A rich, spicy pasta dish featuring 'nduja (a spreadable Calabrian pork salume) emulsified into a tomato sauce with shallots and Pecorino Romano cheese.",
+    source: 'Serious Eats',
+    notes: 'Make sure to use good quality Calabrian chiles for authentic flavor',
     prepTime: null,
     cookTime: 45,
     totalTime: 45,
@@ -76,6 +78,8 @@ export const recipes = [
     title: 'Chicken Paillard (Chicken With Lemon-Herb Butter Sauce)',
     description:
       'Pan-fried chicken cutlets pounded thin and served with a bright lemon-herb butter sauce made with white wine, fresh herbs, and garlic.',
+    source: 'Serious Eats',
+    notes: 'European-style butter recommended for richer sauce',
     prepTime: 30,
     cookTime: null,
     totalTime: 30,

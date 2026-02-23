@@ -57,12 +57,29 @@
   border-radius: 8px;
   padding: 1.5rem;
   background: #fafafa;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.recipe-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+  border-color: #667eea;
 }
 
 .recipe-card h3 {
   color: #667eea;
   margin-bottom: 0.75rem;
   font-size: 1.25rem;
+}
+
+.recipe-card-hint {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: #999;
+  font-style: italic;
+  text-align: center;
 }
 
 .recipe-description {
