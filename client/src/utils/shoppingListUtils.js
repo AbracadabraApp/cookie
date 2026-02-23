@@ -82,26 +82,103 @@ export function consolidateShoppingList(recipes) {
 }
 
 /**
- * Format ingredient display string
+ * Convert recipe measurements to shopping-friendly quantities
+ * @param {Object} item - Ingredient item
+ * @returns {Object} - { quantity, unit, nameOnly }
+ */
+function convertToShoppingQuantity(item) {
+  const { quantity, unit, name } = item;
+  const nameLower = name.toLowerCase();
+
+  // Items that should show as name-only with amount in parentheses
+  const nameOnlyItems = [
+    { keywords: ['parsley', 'cilantro', 'basil', 'chives', 'tarragon', 'thyme', 'rosemary', 'mint', 'dill'], label: 'fresh herbs' },
+    { keywords: ['wine'], label: 'wine' },
+    { keywords: ['stock', 'broth'], label: 'stock/broth' },
+    { keywords: ['cheese'], label: 'cheese' },
+  ];
+
+  for (const category of nameOnlyItems) {
+    if (category.keywords.some(keyword => nameLower.includes(keyword))) {
+      return { quantity, unit, nameOnly: true };
+    }
+  }
+
+  // Remove size descriptors from count items (medium, large, small)
+  const countItems = [
+    'shallot',
+    'onion',
+    'garlic',
+    'lemon',
+    'lime',
+    'orange',
+    'chicken breast',
+    'egg',
+    'avocado',
+    'potato',
+    'tomato',
+  ];
+
+  const isByCount = countItems.some(countItem => nameLower.includes(countItem));
+
+  if (isByCount) {
+    // Remove "medium", "large", "small" descriptors for count items
+    if (unit === 'clove' || unit === 'medium clove') {
+      return { quantity: Math.ceil(quantity || 1), unit: 'clove', nameOnly: false };
+    }
+    if (unit === 'medium' || unit === 'large' || unit === 'small') {
+      return { quantity: Math.ceil(quantity || 1), unit: null, nameOnly: false };
+    }
+  }
+
+  // Butter - convert tablespoons to sticks (very common conversion)
+  if (nameLower.includes('butter') && unit === 'tablespoons') {
+    const sticks = Math.ceil(quantity / 8); // 8 tbsp per stick
+    return { quantity: sticks, unit: sticks === 1 ? 'stick' : 'sticks', nameOnly: false };
+  }
+
+  // Default: return as-is (keep original recipe measurements)
+  return { quantity, unit, nameOnly: false };
+}
+
+/**
+ * Format ingredient display string for shopping list
  * @param {Object} item - Ingredient item
  * @returns {String} - Formatted string
  */
 export function formatIngredient(item) {
-  let result = '';
+  const shopping = convertToShoppingQuantity(item);
 
-  if (item.quantity) {
-    result += item.quantity;
+  // Name-only format: "fresh parsley (2 tablespoons)"
+  if (shopping.nameOnly) {
+    let result = item.name;
+    if (shopping.quantity && shopping.unit) {
+      result += ` (${shopping.quantity} ${shopping.unit})`;
+    }
+    if (item.notes) {
+      result += ` - ${item.notes}`;
+    }
+    return result;
   }
 
-  if (item.unit) {
-    result += ` ${item.unit}`;
+  // Standard format: "2 shallots"
+  let parts = [];
+
+  if (shopping.quantity) {
+    parts.push(shopping.quantity);
   }
 
-  result += ` ${item.name}`;
+  if (shopping.unit) {
+    parts.push(shopping.unit);
+  }
+
+  parts.push(item.name);
+
+  let result = parts.join(' ');
 
   if (item.notes) {
     result += ` (${item.notes})`;
   }
 
-  return result.trim();
+  return result;
 }
