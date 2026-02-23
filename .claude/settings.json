@@ -1,0 +1,15 @@
+{
+  "defaultMode": "acceptEdits",
+  "permissions": {
+    "allow": [
+      "Bash(cd client && npm *)",
+      "Bash(cd client && *)",
+      "Bash(npm *)",
+      "Write(client/**/*)",
+      "Read(client/**/*)",
+      "Edit(client/**/*)",
+      "Write(.claude/**/*)",
+      "Write(CLAUDE.md)"
+    ]
+  }
+}
