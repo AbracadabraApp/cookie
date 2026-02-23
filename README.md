@@ -1,54 +1,70 @@
 🍪 Cookie
-A recipe-driven AI shopping list builder.
-Cookie helps you turn recipes into smart, consolidated shopping lists — powered by AI. Add recipes manually, upload PDFs, and Cookie will extract ingredients, check what you already have on hand, and build your grocery list automatically.
-Getting Started
-Prerequisites
 
-Node.js (v20+)
-PostgreSQL (v15+)
-Git
-An Anthropic API key
+A recipe-driven AI shopping list builder that transforms recipes into smart, consolidated grocery lists.
 
-Setup
+## Overview
 
-Clone the repo
+Cookie uses AI to extract ingredients from recipes, cross-reference your pantry inventory, and generate optimized shopping lists. Whether you're meal planning for the week or cooking a single dish, Cookie eliminates the hassle of manual list-making and duplicate ingredient tracking.
 
-bash   git clone https://github.com/your-org/cookie.git
-   cd cookie
+## Features
 
-Install dependencies
+- **Recipe Input**: Add recipes through text entry or PDF upload
+- **AI Ingredient Extraction**: Automatically parses ingredients from recipe text using Claude
+- **Pantry Management**: Track what you already have to avoid buying duplicates
+- **Smart List Consolidation**: Combines ingredients across multiple recipes
+- **Quantity Normalization**: Converts and aggregates amounts across different units
 
-bash   # Backend
-   cd server
-   npm install
+## Tech Stack
 
-   # Frontend
-   cd ../client
-   npm install
+**Frontend**
+- React with TypeScript
+- Vite for build tooling
+- Modern CSS for styling
 
-Set up environment variables
+**Backend**
+- Node.js with Express
+- PostgreSQL for data persistence
+- Anthropic Claude API for AI processing
 
-bash   cp .env.example .env
-Fill in your values (see docs/SETUP.md for details).
+## Getting Started
 
-Set up the database
+### Prerequisites
 
-bash   cd server
-   npm run db:migrate
-   npm run db:seed   # optional sample data
+- Node.js v20 or higher
+- PostgreSQL v15 or higher
+- Anthropic API key
 
-Run locally
+### Installation
 
-bash   # From the root
-   npm run dev
+Clone the repository:
 
-Frontend: http://localhost:5173
-Backend: http://localhost:3001
+```bash
+git clone https://github.com/AbracadabraApp/cookie.git
+cd cookie
+```
 
-Team
+### Configuration
 
-Sophia Petersen
-Josh Petersen
+Set up your Anthropic API key and database connection details in environment variables.
 
-License
+## Project Structure
+
+```
+cookie/
+├── client/          # React frontend application
+├── server/          # Express backend API
+└── docs/            # Additional documentation
+```
+
+## Development Status
+
+Cookie is currently in early development. Core features are being actively implemented.
+
+## Team
+
+- Sophia Petersen
+- Josh Petersen
+
+## License
+
 MIT
