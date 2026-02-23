@@ -32,6 +32,26 @@ A running log of technology choices and why we made them. This saves us from re-
 **Decision:** Start with manual entry + PDF upload. Defer web scraping.
 **Why:** PDF parsing is more contained and reliable. Scraping brings legal gray areas and site-specific fragility. Revisit once core flow works.
 
+### 2025-02-23 — Deploy backend on Mac Mini (not Railway)
+**Decision:** Host Cookie backend on Mac Mini alongside Jarvis.
+**Why:** Mac Mini is already running 24/7 with Node.js v25.6.0. Jarvis needs local API access for iMessage integration. Simpler deployment (no external hosting costs). Can add Railway later if needed for public access.
+
+### 2025-02-23 — Four recipe input methods
+**Decision:** Support manual, cut/paste, PDF upload, and Jarvis (iMessage) input.
+**Why:** Different use cases require different input methods. Manual for precise control. Paste for quick web recipes. PDF for cookbooks/printouts. Jarvis for hands-free mobile input via iMessage.
+
+### 2025-02-23 — Shared catalog + private user state
+**Decision:** Backend serves shared public recipe catalog. User-specific data (ingredient checkboxes, shopping lists) stored in localStorage.
+**Why:** User requirement: "recipe catalog to be shared - but interaction (making it, ingredients) to be unique". No authentication needed initially. Private data stays local. Can add sync/auth later.
+
+### 2025-02-23 — Use PM2 for process management
+**Decision:** Run Cookie backend with PM2 (same pattern as Jarvis Launch Agent).
+**Why:** Auto-restart on crashes. Log management. Production-ready. Familiar pattern already working on Mac Mini.
+
+### 2025-02-23 — Jarvis integration via REST API
+**Decision:** Jarvis POSTs to `/api/jarvis/recipe` endpoint with recipe text/URL.
+**Why:** Clean separation of concerns. Jarvis stays focused on message handling. Cookie handles recipe parsing. Shared secret token for auth. Extensible for other agents.
+
 ---
 
 *Add new decisions at the bottom as they come up. Date them so we have a timeline.*
