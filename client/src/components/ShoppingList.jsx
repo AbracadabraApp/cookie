@@ -1,11 +1,41 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { formatIngredient } from '../utils/shoppingListUtils';
 import './ShoppingList.css';
 
+const STORAGE_KEY = 'cookie-shopping-list';
+
 function ShoppingList({ initialNeedToShop, initialMayHaveOnHand, recipeCount }) {
-  const [needToShop, setNeedToShop] = useState(initialNeedToShop);
-  const [mayHaveOnHand, setMayHaveOnHand] = useState(initialMayHaveOnHand);
+  // Initialize state from localStorage or props
+  const [needToShop, setNeedToShop] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const { needToShop: savedShop } = JSON.parse(saved);
+      return savedShop;
+    }
+    return initialNeedToShop;
+  });
+
+  const [mayHaveOnHand, setMayHaveOnHand] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const { mayHaveOnHand: savedHave } = JSON.parse(saved);
+      return savedHave;
+    }
+    return initialMayHaveOnHand;
+  });
+
   const [newItem, setNewItem] = useState('');
+
+  // Save to localStorage whenever lists change
+  useEffect(() => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        needToShop,
+        mayHaveOnHand,
+      })
+    );
+  }, [needToShop, mayHaveOnHand]);
 
   const handleToggle = (item, fromList) => {
     if (fromList === 'shop') {
