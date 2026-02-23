@@ -5,9 +5,10 @@ import './ShoppingList.css';
 function ShoppingList({ items, onUpdateItems }) {
   const [newItem, setNewItem] = useState('');
 
-  const handleToggle = itemIndex => {
+  const handleToggle = (itemIndex, currentUserHas) => {
+    // Toggle userHas status (moves between lists)
     const updated = items.map((item, idx) =>
-      idx === itemIndex ? { ...item, checked: !item.checked } : item
+      idx === itemIndex ? { ...item, userHas: !currentUserHas } : item
     );
     onUpdateItems(updated);
   };
@@ -35,18 +36,21 @@ function ShoppingList({ items, onUpdateItems }) {
     }
   };
 
-  // Only show items user needs to buy (userHas === false or undefined for manual items)
-  const itemsToDisplay = items.map((item, originalIndex) => ({ ...item, originalIndex }))
+  // Split items into need to shop vs have on hand
+  const needToShop = items
+    .map((item, originalIndex) => ({ ...item, originalIndex }))
     .filter(item => item.userHas === false || item.userHas === undefined);
 
-  const uncheckedCount = itemsToDisplay.filter(item => !item.checked).length;
+  const haveOnHand = items
+    .map((item, originalIndex) => ({ ...item, originalIndex }))
+    .filter(item => item.userHas === true);
 
   return (
     <div className="shopping-list">
       <div className="shopping-list-header">
         <h2>Shopping List</h2>
         <p className="recipe-count">
-          {uncheckedCount} {uncheckedCount === 1 ? 'item' : 'items'} to buy
+          {needToShop.length} {needToShop.length === 1 ? 'item' : 'items'} to shop
         </p>
       </div>
 
@@ -64,25 +68,23 @@ function ShoppingList({ items, onUpdateItems }) {
       </form>
 
       <section className="list-section">
-        {itemsToDisplay.length === 0 ? (
+        <h3>May Need to Shop ☐</h3>
+        {needToShop.length === 0 ? (
           <p className="empty-list">
             No items yet. Click a recipe and select "I'm Making This" to add ingredients.
           </p>
         ) : (
           <ul className="ingredient-list">
-            {itemsToDisplay.map((item) => (
+            {needToShop.map((item) => (
               <li key={`${item.ingredientId}-${item.originalIndex}`} className="ingredient-item">
                 <label>
                   <input
                     type="checkbox"
-                    checked={item.checked}
-                    onChange={() => handleToggle(item.originalIndex)}
+                    checked={false}
+                    onChange={() => handleToggle(item.originalIndex, false)}
                   />
-                  <span className={`ingredient-text ${item.checked ? 'checked' : ''}`}>
+                  <span className="ingredient-text">
                     {formatIngredient(item)}
-                    {item.recipeTitle && item.recipeTitle !== 'Manual' && (
-                      <span className="recipe-badge">{item.recipeTitle}</span>
-                    )}
                   </span>
                 </label>
                 <button
@@ -97,6 +99,35 @@ function ShoppingList({ items, onUpdateItems }) {
           </ul>
         )}
       </section>
+
+      {haveOnHand.length > 0 && (
+        <section className="list-section">
+          <h3>May Have On Hand ☑</h3>
+          <ul className="ingredient-list">
+            {haveOnHand.map((item) => (
+              <li key={`${item.ingredientId}-${item.originalIndex}`} className="ingredient-item already-have">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={true}
+                    onChange={() => handleToggle(item.originalIndex, true)}
+                  />
+                  <span className="ingredient-text">
+                    {formatIngredient(item)}
+                  </span>
+                </label>
+                <button
+                  className="remove-button"
+                  onClick={() => handleRemove(item.originalIndex)}
+                  title="Remove item"
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }
