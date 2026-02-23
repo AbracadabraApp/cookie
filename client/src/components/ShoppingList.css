@@ -37,12 +37,19 @@
 
 .ingredient-list {
   list-style: none;
-  margin-bottom: 1rem;
+  margin-bottom: 0;
 }
 
 .ingredient-item {
-  padding: 0.75rem 0;
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
   border-bottom: 1px solid #f0f0f0;
+  gap: 0.5rem;
+}
+
+.ingredient-item:hover {
+  background: #fafafa;
 }
 
 .ingredient-item:last-child {
@@ -54,6 +61,7 @@
   align-items: center;
   cursor: pointer;
   user-select: none;
+  flex: 1;
 }
 
 .ingredient-item input[type='checkbox'] {
@@ -61,25 +69,59 @@
   width: 18px;
   height: 18px;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .ingredient-text {
   flex: 1;
   color: #333;
   font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.ingredient-item.specialty {
-  background-color: #fff8e1;
-  padding: 0.75rem;
-  margin: 0.25rem 0;
-  border-radius: 4px;
-  border: 1px solid #ffd54f;
+.ingredient-text.checked {
+  color: #999;
+  text-decoration: line-through;
 }
 
-.specialty-badge {
-  margin-left: 0.5rem;
-  font-size: 1rem;
+.recipe-badge {
+  background: #e8eaf6;
+  color: #667eea;
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.remove-button {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.remove-button:hover {
+  background: #ffebee;
+  color: #d32f2f;
+}
+
+.empty-list {
+  color: #888;
+  text-align: center;
+  padding: 2rem;
+  font-style: italic;
 }
 
 .add-item-form {

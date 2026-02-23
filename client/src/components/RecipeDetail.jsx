@@ -1,8 +1,50 @@
-import { formatIngredient } from '../utils/shoppingListUtils';
+import { useState } from 'react';
+import { formatIngredient, isLikelyInPantry } from '../utils/shoppingListUtils';
 import './RecipeDetail.css';
 
-function RecipeDetail({ recipe, onClose }) {
+function RecipeDetail({ recipe, onClose, onAddToShoppingList }) {
+  const [checkedIngredients, setCheckedIngredients] = useState(() => {
+    // AI guess: check items that are likely already in pantry
+    const likelyHave = new Set();
+    recipe.ingredients.forEach(ing => {
+      if (isLikelyInPantry(ing)) {
+        likelyHave.add(ing.id);
+      }
+    });
+    return likelyHave;
+  });
+
   if (!recipe) return null;
+
+  const handleIngredientToggle = ingredientId => {
+    setCheckedIngredients(prev => {
+      const next = new Set(prev);
+      if (next.has(ingredientId)) {
+        next.delete(ingredientId);
+      } else {
+        next.add(ingredientId);
+      }
+      return next;
+    });
+  };
+
+  const handleMakingThis = () => {
+    // Add ALL ingredients with their have/need status for learning
+    const itemsToAdd = recipe.ingredients.map(ing => ({
+      ingredientId: ing.id,
+      name: ing.name,
+      quantity: ing.quantity,
+      unit: ing.unit,
+      notes: ing.notes,
+      recipeTitle: recipe.title,
+      recipeId: recipe.id,
+      userHas: checkedIngredients.has(ing.id), // Track if user said they have it
+      checked: false, // Not yet purchased (for shopping list checkbox)
+    }));
+
+    onAddToShoppingList(itemsToAdd);
+    onClose();
+  };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -35,11 +77,26 @@ function RecipeDetail({ recipe, onClose }) {
 
         <section className="recipe-detail-section">
           <h3>Ingredients</h3>
+          <p className="ingredients-instruction">
+            ✓ Check items you already have • Unchecked items will be added to your shopping list
+          </p>
           <ul className="ingredients-list">
             {recipe.ingredients.map(ing => (
-              <li key={ing.id}>{formatIngredient(ing)}</li>
+              <li key={ing.id} className="ingredient-item-detail">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={checkedIngredients.has(ing.id)}
+                    onChange={() => handleIngredientToggle(ing.id)}
+                  />
+                  <span className="ingredient-text">{formatIngredient(ing)}</span>
+                </label>
+              </li>
             ))}
           </ul>
+          <button className="making-this-button" onClick={handleMakingThis}>
+            I'm Making This
+          </button>
         </section>
 
         <section className="recipe-detail-section">

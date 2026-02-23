@@ -116,19 +116,69 @@
   border-bottom: 2px solid #667eea;
 }
 
+.ingredients-instruction {
+  background: #f0f7ff;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #555;
+  margin-bottom: 1rem;
+  border-left: 3px solid #667eea;
+}
+
 .ingredients-list {
   list-style: none;
   padding: 0;
+  margin-bottom: 1.5rem;
 }
 
-.ingredients-list li {
-  padding: 0.5rem 0;
+.ingredient-item-detail {
+  padding: 0.75rem 0;
   border-bottom: 1px solid #f0f0f0;
-  color: #333;
 }
 
-.ingredients-list li:last-child {
+.ingredient-item-detail:last-child {
   border-bottom: none;
+}
+
+.ingredient-item-detail label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ingredient-item-detail input[type='checkbox'] {
+  margin-right: 0.75rem;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.ingredient-item-detail .ingredient-text {
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.making-this-button {
+  width: 100%;
+  padding: 1rem;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.making-this-button:hover {
+  background: #5568d3;
+}
+
+.making-this-button:active {
+  background: #4554b8;
 }
 
 .directions-list {

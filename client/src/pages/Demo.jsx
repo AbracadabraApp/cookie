@@ -1,17 +1,37 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { recipes } from '../data/recipes';
-import { consolidateShoppingList } from '../utils/shoppingListUtils';
 import ShoppingList from '../components/ShoppingList';
 import RecipeDetail from '../components/RecipeDetail';
 import './Demo.css';
 
 function Demo() {
   const [selectedRecipe, setSelectedRecipe] = useState(null);
+  const [shoppingListItems, setShoppingListItems] = useState(() => {
+    const saved = localStorage.getItem('cookie-shopping-list-items');
+    return saved ? JSON.parse(saved) : [];
+  });
 
-  const { needToShop, mayHaveOnHand } = useMemo(
-    () => consolidateShoppingList(recipes),
-    []
-  );
+  const handleAddToShoppingList = newItems => {
+    setShoppingListItems(prev => {
+      const updated = [...prev];
+
+      // Add new items, avoiding duplicates by ingredient id
+      newItems.forEach(newItem => {
+        if (!updated.find(item => item.ingredientId === newItem.ingredientId)) {
+          updated.push(newItem);
+        }
+      });
+
+      // Save to localStorage
+      localStorage.setItem('cookie-shopping-list-items', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleUpdateShoppingList = updatedItems => {
+    setShoppingListItems(updatedItems);
+    localStorage.setItem('cookie-shopping-list-items', JSON.stringify(updatedItems));
+  };
 
   return (
     <div className="demo-page">
@@ -22,7 +42,7 @@ function Demo() {
 
       <main className="demo-main">
         <section className="recipes-section">
-          <h2>Selected Recipes</h2>
+          <h2>Recipe Library</h2>
           <div className="recipe-cards">
             {recipes.map(recipe => (
               <div
@@ -43,21 +63,21 @@ function Demo() {
                     </span>
                   ))}
                 </div>
-                <p className="recipe-card-hint">Click to view full recipe</p>
+                <p className="recipe-card-hint">Click to view recipe</p>
               </div>
             ))}
           </div>
         </section>
 
-        <ShoppingList
-          initialNeedToShop={needToShop}
-          initialMayHaveOnHand={mayHaveOnHand}
-          recipeCount={recipes.length}
-        />
+        <ShoppingList items={shoppingListItems} onUpdateItems={handleUpdateShoppingList} />
       </main>
 
       {selectedRecipe && (
-        <RecipeDetail recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />
+        <RecipeDetail
+          recipe={selectedRecipe}
+          onClose={() => setSelectedRecipe(null)}
+          onAddToShoppingList={handleAddToShoppingList}
+        />
       )}
     </div>
   );

@@ -12,7 +12,19 @@ const COMMON_PANTRY_ITEMS = [
   'sugar',
   'vegetable oil',
   'canola oil',
+  'diamond crystal kosher salt',
+  'flaky sea salt',
 ];
+
+/**
+ * Check if an ingredient is likely in a typical pantry
+ * @param {Object} ingredient - Ingredient object with name
+ * @returns {Boolean}
+ */
+export function isLikelyInPantry(ingredient) {
+  const nameLower = ingredient.name.toLowerCase();
+  return COMMON_PANTRY_ITEMS.some(pantryItem => nameLower.includes(pantryItem));
+}
 
 // Specialty items that should be highlighted for review
 const SPECIALTY_ITEMS = [
