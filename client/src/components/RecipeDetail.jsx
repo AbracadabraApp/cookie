@@ -3,6 +3,8 @@ import { formatIngredientForRecipe, isLikelyInPantry } from '../utils/shoppingLi
 import './RecipeDetail.css';
 
 function RecipeDetail({ recipe, onClose, onAddToShoppingList }) {
+  if (!recipe) return null;
+
   const [checkedIngredients, setCheckedIngredients] = useState(() => {
     // AI guess: check items that are likely already in pantry
     const likelyHave = new Set();
@@ -13,8 +15,6 @@ function RecipeDetail({ recipe, onClose, onAddToShoppingList }) {
     });
     return likelyHave;
   });
-
-  if (!recipe) return null;
 
   const handleIngredientToggle = ingredientId => {
     setCheckedIngredients(prev => {
