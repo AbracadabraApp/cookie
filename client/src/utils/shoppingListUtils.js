@@ -94,6 +94,34 @@ export function consolidateShoppingList(recipes) {
 }
 
 /**
+ * Format ingredient for recipe display (with full measurements for cooking)
+ * @param {Object} item - Ingredient item
+ * @returns {String} - Formatted string with measurements
+ */
+export function formatIngredientForRecipe(item) {
+  const { quantity, unit, name, notes } = item;
+  let parts = [];
+
+  if (quantity) {
+    parts.push(quantity);
+  }
+
+  if (unit) {
+    parts.push(unit);
+  }
+
+  parts.push(name);
+
+  let result = parts.join(' ');
+
+  if (notes) {
+    result += ` (${notes})`;
+  }
+
+  return result;
+}
+
+/**
  * Format ingredient display string for shopping list
  * Shows count for countable items, weight for packaged items, just name for measurable items
  * @param {Object} item - Ingredient item

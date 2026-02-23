@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { formatIngredient, isLikelyInPantry } from '../utils/shoppingListUtils';
+import { formatIngredientForRecipe, isLikelyInPantry } from '../utils/shoppingListUtils';
 import './RecipeDetail.css';
 
 function RecipeDetail({ recipe, onClose, onAddToShoppingList }) {
@@ -89,7 +89,7 @@ function RecipeDetail({ recipe, onClose, onAddToShoppingList }) {
                     checked={checkedIngredients.has(ing.id)}
                     onChange={() => handleIngredientToggle(ing.id)}
                   />
-                  <span className="ingredient-text">{formatIngredient(ing)}</span>
+                  <span className="ingredient-text">{formatIngredientForRecipe(ing)}</span>
                 </label>
               </li>
             ))}
