@@ -13,10 +13,6 @@ function ShoppingList({ items, onUpdateItems }) {
     onUpdateItems(updated);
   };
 
-  const handleRemove = itemIndex => {
-    const updated = items.filter((_, idx) => idx !== itemIndex);
-    onUpdateItems(updated);
-  };
 
   const handleAddItem = e => {
     e.preventDefault();
@@ -87,13 +83,6 @@ function ShoppingList({ items, onUpdateItems }) {
                     {formatIngredient(item)}
                   </span>
                 </label>
-                <button
-                  className="remove-button"
-                  onClick={() => handleRemove(item.originalIndex)}
-                  title="Remove item"
-                >
-                  ×
-                </button>
               </li>
             ))}
           </ul>
@@ -116,13 +105,6 @@ function ShoppingList({ items, onUpdateItems }) {
                     {formatIngredient(item)}
                   </span>
                 </label>
-                <button
-                  className="remove-button"
-                  onClick={() => handleRemove(item.originalIndex)}
-                  title="Remove item"
-                >
-                  ×
-                </button>
               </li>
             ))}
           </ul>
