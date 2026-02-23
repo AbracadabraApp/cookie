@@ -86,11 +86,6 @@
   text-decoration: line-through;
 }
 
-.ingredient-item.already-have {
-  background: #f1f8f4;
-  border-left: 3px solid #4caf50;
-}
-
 .have-badge {
   background: #e8f5e9;
   color: #2e7d32;
