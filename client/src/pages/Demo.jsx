@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { recipes } from '../data/recipes';
-import { isLikelyInPantry } from '../utils/shoppingListUtils';
+import { useShoppingListPersistence } from '../hooks/useShoppingListPersistence';
+import { getIngredientCounts } from '../utils/recipeUtils';
 import ShoppingList from '../components/ShoppingList';
 import RecipeDetail from '../components/RecipeDetail';
 import AddRecipe from '../components/AddRecipe';
@@ -9,31 +10,23 @@ import './Demo.css';
 function Demo() {
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [showAddRecipe, setShowAddRecipe] = useState(false);
-  const [shoppingListItems, setShoppingListItems] = useState(() => {
-    const saved = localStorage.getItem('cookie-shopping-list-items');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [shoppingListItems, setShoppingListItems] = useShoppingListPersistence();
 
   const handleAddToShoppingList = newItems => {
-    setShoppingListItems(prev => {
-      const updated = [...prev];
+    const updated = [...shoppingListItems];
 
-      // Add new items, avoiding duplicates by ingredient id
-      newItems.forEach(newItem => {
-        if (!updated.find(item => item.ingredientId === newItem.ingredientId)) {
-          updated.push(newItem);
-        }
-      });
-
-      // Save to localStorage
-      localStorage.setItem('cookie-shopping-list-items', JSON.stringify(updated));
-      return updated;
+    // Add new items, avoiding duplicates by ingredient id
+    newItems.forEach(newItem => {
+      if (!updated.find(item => item.ingredientId === newItem.ingredientId)) {
+        updated.push(newItem);
+      }
     });
+
+    setShoppingListItems(updated);
   };
 
   const handleUpdateShoppingList = updatedItems => {
     setShoppingListItems(updatedItems);
-    localStorage.setItem('cookie-shopping-list-items', JSON.stringify(updatedItems));
   };
 
   return (
@@ -53,12 +46,7 @@ function Demo() {
           </div>
           <div className="recipe-cards">
             {recipes.map(recipe => {
-              const shopCount = recipe.ingredients.filter(
-                ing => !isLikelyInPantry(ing)
-              ).length;
-              const haveCount = recipe.ingredients.filter(ing =>
-                isLikelyInPantry(ing)
-              ).length;
+              const { shopCount, haveCount } = getIngredientCounts(recipe);
 
               return (
                 <div

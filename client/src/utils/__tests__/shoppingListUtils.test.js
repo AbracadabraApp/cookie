@@ -3,7 +3,8 @@ import {
   isLikelyInPantry,
   formatIngredient,
   formatIngredientForRecipe,
-  consolidateShoppingList
+  consolidateShoppingList,
+  splitShoppingList
 } from '../shoppingListUtils';
 
 describe('isLikelyInPantry', () => {
@@ -332,5 +333,74 @@ describe('consolidateShoppingList', () => {
     const nduja = result.needToShop.find(item => item.name === 'nduja');
 
     expect(nduja.isSpecialty).toBe(true);
+  });
+});
+
+describe('splitShoppingList', () => {
+  it('returns empty arrays for empty input', () => {
+    const result = splitShoppingList([]);
+    expect(result.needToShop).toEqual([]);
+    expect(result.haveOnHand).toEqual([]);
+  });
+
+  it('splits items based on userHas property', () => {
+    const items = [
+      { ingredientId: '1', name: 'pasta', userHas: false },
+      { ingredientId: '2', name: 'salt', userHas: true },
+      { ingredientId: '3', name: 'chicken', userHas: false }
+    ];
+
+    const result = splitShoppingList(items);
+
+    expect(result.needToShop).toHaveLength(2);
+    expect(result.haveOnHand).toHaveLength(1);
+  });
+
+  it('treats undefined userHas as need to shop', () => {
+    const items = [
+      { ingredientId: '1', name: 'pasta', userHas: undefined },
+      { ingredientId: '2', name: 'salt' } // no userHas property
+    ];
+
+    const result = splitShoppingList(items);
+
+    expect(result.needToShop).toHaveLength(2);
+    expect(result.haveOnHand).toHaveLength(0);
+  });
+
+  it('preserves original index in split items', () => {
+    const items = [
+      { ingredientId: '1', name: 'pasta', userHas: false },
+      { ingredientId: '2', name: 'salt', userHas: true },
+      { ingredientId: '3', name: 'chicken', userHas: false }
+    ];
+
+    const result = splitShoppingList(items);
+
+    expect(result.needToShop[0].originalIndex).toBe(0);
+    expect(result.haveOnHand[0].originalIndex).toBe(1);
+    expect(result.needToShop[1].originalIndex).toBe(2);
+  });
+
+  it('preserves all item properties', () => {
+    const items = [
+      {
+        ingredientId: '1',
+        name: 'pasta',
+        quantity: 1,
+        unit: 'pound',
+        notes: 'dried',
+        recipeTitle: 'Pasta Recipe',
+        userHas: false
+      }
+    ];
+
+    const result = splitShoppingList(items);
+
+    expect(result.needToShop[0].name).toBe('pasta');
+    expect(result.needToShop[0].quantity).toBe(1);
+    expect(result.needToShop[0].unit).toBe('pound');
+    expect(result.needToShop[0].notes).toBe('dried');
+    expect(result.needToShop[0].recipeTitle).toBe('Pasta Recipe');
   });
 });

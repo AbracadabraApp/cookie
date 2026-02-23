@@ -122,6 +122,25 @@ export function formatIngredientForRecipe(item) {
 }
 
 /**
+ * Split shopping list items into need to shop and have on hand categories
+ * @param {Array} items - Shopping list items
+ * @returns {Object} - { needToShop, haveOnHand }
+ */
+export function splitShoppingList(items) {
+  const itemsWithIndex = items.map((item, originalIndex) => ({
+    ...item,
+    originalIndex
+  }));
+
+  return {
+    needToShop: itemsWithIndex.filter(
+      item => item.userHas === false || item.userHas === undefined
+    ),
+    haveOnHand: itemsWithIndex.filter(item => item.userHas === true)
+  };
+}
+
+/**
  * Format ingredient display string for shopping list
  * Shows count for countable items, weight for packaged items, just name for measurable items
  * @param {Object} item - Ingredient item

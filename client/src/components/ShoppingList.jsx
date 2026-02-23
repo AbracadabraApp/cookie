@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { formatIngredient } from '../utils/shoppingListUtils';
+import { formatIngredient, splitShoppingList } from '../utils/shoppingListUtils';
 import './ShoppingList.css';
 
 function ShoppingList({ items, onUpdateItems }) {
@@ -13,7 +13,6 @@ function ShoppingList({ items, onUpdateItems }) {
     onUpdateItems(updated);
   };
 
-
   const handleAddItem = e => {
     e.preventDefault();
     if (newItem.trim()) {
@@ -26,6 +25,7 @@ function ShoppingList({ items, onUpdateItems }) {
         recipeTitle: 'Manual',
         recipeId: null,
         checked: false,
+        userHas: false
       };
       onUpdateItems([...items, item]);
       setNewItem('');
@@ -33,13 +33,7 @@ function ShoppingList({ items, onUpdateItems }) {
   };
 
   // Split items into need to shop vs have on hand
-  const needToShop = items
-    .map((item, originalIndex) => ({ ...item, originalIndex }))
-    .filter(item => item.userHas === false || item.userHas === undefined);
-
-  const haveOnHand = items
-    .map((item, originalIndex) => ({ ...item, originalIndex }))
-    .filter(item => item.userHas === true);
+  const { needToShop, haveOnHand } = splitShoppingList(items);
 
   return (
     <div className="shopping-list">
