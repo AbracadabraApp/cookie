@@ -131,12 +131,45 @@ Currently hardcoded in `client/src/data/recipes.js`:
 - No recipe import functionality (AddRecipe component is UI-only placeholder)
 - localStorage used for shopping list persistence (will move to database)
 
+## Testing
+
+**Run tests:**
+```bash
+cd client && npm test              # Watch mode
+npm run test:coverage              # With coverage report
+```
+
+**Test structure:**
+- `src/utils/__tests__/` - Unit tests for pure functions (100% coverage)
+- `src/components/__tests__/` - Component tests with React Testing Library
+- `src/__tests__/integration/` - End-to-end integration tests
+
+**Coverage requirements:**
+- Utils: 100% coverage (statements, branches, functions, lines)
+- Components: 70%+ coverage
+- All tests must pass before merging
+
+**Current test stats:** 110 tests passing
+- Utils: 44 tests (shoppingListUtils, recipeUtils)
+- Components: 52 tests (ShoppingList, RecipeDetail)
+- Integration: 14 tests (shopping-flow)
+
+**Testing patterns:**
+- Use `vi.fn()` for mocks
+- Clear localStorage in `beforeEach` for integration tests
+- Test user interactions with fireEvent
+- Use `within()` for scoped queries
+- Test both happy path and edge cases
+
 ## Key Files
 
 - `client/src/pages/Demo.jsx` - Main page with recipe library and shopping list
 - `client/src/components/RecipeDetail.jsx` - Recipe modal with ingredient checkboxes
 - `client/src/components/ShoppingList.jsx` - Two-list shopping UI (Need to Shop / Have On Hand)
 - `client/src/utils/shoppingListUtils.js` - Business logic for formatting and pantry detection
+- `client/src/utils/recipeUtils.js` - Recipe helper functions (ingredient counts)
+- `client/src/hooks/useShoppingListPersistence.js` - localStorage management hook
+- `client/src/constants.js` - Application constants (storage keys, etc.)
 - `client/src/data/recipes.js` - Hardcoded recipe data (3 recipes)
 - `docs/DATA_MODEL.md` - Planned database schema
 - `docs/TECH_DECISIONS.md` - Technology choices and rationale
