@@ -12,12 +12,20 @@ function Demo() {
   const [showAddRecipe, setShowAddRecipe] = useState(false);
   const [shoppingListItems, setShoppingListItems] = useShoppingListPersistence();
 
+  // Store user's ingredient preferences per recipe (persists across modal opens)
+  const [recipeIngredientPrefs, setRecipeIngredientPrefs] = useState({});
+
   const handleAddToShoppingList = newItems => {
     const updated = [...shoppingListItems];
 
-    // Add new items, avoiding duplicates by ingredient id
+    // Add new items or update existing ones
     newItems.forEach(newItem => {
-      if (!updated.find(item => item.ingredientId === newItem.ingredientId)) {
+      const existingIndex = updated.findIndex(item => item.ingredientId === newItem.ingredientId);
+      if (existingIndex >= 0) {
+        // Update existing item (preserve checked state from newItem)
+        updated[existingIndex] = { ...updated[existingIndex], ...newItem };
+      } else {
+        // Add new item
         updated.push(newItem);
       }
     });
@@ -86,6 +94,14 @@ function Demo() {
           recipe={selectedRecipe}
           onClose={() => setSelectedRecipe(null)}
           onAddToShoppingList={handleAddToShoppingList}
+          shoppingListItems={shoppingListItems}
+          savedPreferences={recipeIngredientPrefs[selectedRecipe.id]}
+          onPreferencesChange={(prefs) => {
+            setRecipeIngredientPrefs(prev => ({
+              ...prev,
+              [selectedRecipe.id]: prefs
+            }));
+          }}
         />
       )}
 

@@ -2,11 +2,30 @@ import { useState } from 'react';
 import { formatIngredientForRecipe, isLikelyInPantry } from '../utils/shoppingListUtils';
 import './RecipeDetail.css';
 
-function RecipeDetail({ recipe, onClose, onAddToShoppingList }) {
+function RecipeDetail({ recipe, onClose, onAddToShoppingList, shoppingListItems, savedPreferences, onPreferencesChange }) {
   if (!recipe) return null;
 
   const [checkedIngredients, setCheckedIngredients] = useState(() => {
-    // AI guess: check items that are likely already in pantry
+    // Priority 1: Check shopping list for existing items from this recipe
+    const checkedFromList = new Set();
+    if (shoppingListItems) {
+      shoppingListItems.forEach(item => {
+        if (item.recipeId === recipe.id && item.userHas === true) {
+          checkedFromList.add(item.ingredientId);
+        }
+      });
+      // If we found items in shopping list, use that state
+      if (checkedFromList.size > 0) {
+        return checkedFromList;
+      }
+    }
+
+    // Priority 2: Use saved preferences if available
+    if (savedPreferences && savedPreferences.length > 0) {
+      return new Set(savedPreferences);
+    }
+
+    // Priority 3: AI guess - check items that are likely already in pantry
     const likelyHave = new Set();
     recipe.ingredients.forEach(ing => {
       if (isLikelyInPantry(ing)) {
@@ -19,11 +38,37 @@ function RecipeDetail({ recipe, onClose, onAddToShoppingList }) {
   const handleIngredientToggle = ingredientId => {
     setCheckedIngredients(prev => {
       const next = new Set(prev);
-      if (next.has(ingredientId)) {
+      const wasChecked = next.has(ingredientId);
+
+      if (wasChecked) {
         next.delete(ingredientId);
       } else {
         next.add(ingredientId);
       }
+
+      // Save preferences so they persist when modal reopens
+      if (onPreferencesChange) {
+        onPreferencesChange(Array.from(next));
+      }
+
+      // Find the ingredient being toggled
+      const ingredient = recipe.ingredients.find(ing => ing.id === ingredientId);
+      if (ingredient) {
+        // Add/update this single ingredient in shopping list
+        const item = {
+          ingredientId: ingredient.id,
+          name: ingredient.name,
+          quantity: ingredient.quantity,
+          unit: ingredient.unit,
+          notes: ingredient.notes,
+          recipeTitle: recipe.title,
+          recipeId: recipe.id,
+          userHas: !wasChecked, // New state (toggled)
+          checked: false,
+        };
+        onAddToShoppingList([item]);
+      }
+
       return next;
     });
   };
