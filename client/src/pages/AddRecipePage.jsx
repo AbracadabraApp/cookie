@@ -1,14 +1,39 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createRecipe } from '../services/api';
 import './AddRecipePage.css';
+
+// The parse/URL endpoints return camelCase; POST /api/recipes expects snake_case
+function toSnakeCase(parsed) {
+  return {
+    title: parsed.title,
+    description: parsed.description,
+    source: parsed.source || parsed.url,
+    source_type: parsed.source_type || 'manual',
+    notes: parsed.notes,
+    prep_time: parsed.prepTime,
+    cook_time: parsed.cookTime,
+    total_time: parsed.totalTime,
+    servings: parsed.servings,
+    ingredients: parsed.ingredients,
+    directions: parsed.directions,
+    categories: parsed.categories,
+  };
+}
 
 function AddRecipePage() {
   const navigate = useNavigate();
   const [recipeText, setRecipeText] = useState('');
   const [urlInput, setUrlInput] = useState('');
-  const [inputMethod, setInputMethod] = useState('url'); // 'url', 'pdf', 'text'
+  const [inputMethod, setInputMethod] = useState('url');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
+
+  const saveRecipe = async (parsed, source, sourceType) => {
+    const data = toSnakeCase({ ...parsed, source, source_type: sourceType });
+    await createRecipe(data);
+    navigate('/');
+  };
 
   const handleUrlSubmit = async e => {
     e.preventDefault();
@@ -21,7 +46,7 @@ function AddRecipePage() {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:3000/api/recipes/url', {
+      const response = await fetch('/api/recipes/url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: urlInput })
@@ -31,11 +56,8 @@ function AddRecipePage() {
         throw new Error('Failed to fetch recipe from URL');
       }
 
-      const data = await response.json();
-      console.log('Recipe extracted:', data);
-
-      alert(`Recipe "${data.data.title}" extracted successfully! (Backend integration complete - just needs to be saved to database)`);
-      navigate('/');
+      const { data } = await response.json();
+      await saveRecipe(data, urlInput, 'url');
     } catch (err) {
       setError(err.message || 'Failed to fetch recipe. Please check the URL and try again.');
     } finally {
@@ -54,7 +76,7 @@ function AddRecipePage() {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:3000/api/recipes/parse', {
+      const response = await fetch('/api/recipes/parse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: recipeText })
@@ -64,11 +86,8 @@ function AddRecipePage() {
         throw new Error('Failed to parse recipe text');
       }
 
-      const data = await response.json();
-      console.log('Recipe parsed:', data);
-
-      alert(`Recipe "${data.data.title}" parsed successfully! (Backend integration complete - just needs to be saved to database)`);
-      navigate('/');
+      const { data } = await response.json();
+      await saveRecipe(data, 'Manual', 'paste');
     } catch (err) {
       setError(err.message || 'Failed to process recipe. Please try again.');
     } finally {
@@ -90,10 +109,7 @@ function AddRecipePage() {
 
     try {
       // TODO: Call backend API to extract recipe from PDF
-      console.log('PDF file:', file.name);
-
-      alert('PDF extraction coming soon! For now, this is just the UI.');
-      navigate('/');
+      setError('PDF extraction coming soon.');
     } catch (err) {
       setError('Failed to process PDF. Please try again.');
     } finally {
@@ -105,7 +121,7 @@ function AddRecipePage() {
     <div className="add-recipe-page">
       <div className="add-recipe-container">
         <button className="back-button" onClick={() => navigate('/')}>
-          ← Back to Recipes
+          ← Back
         </button>
 
         <header className="add-recipe-header">

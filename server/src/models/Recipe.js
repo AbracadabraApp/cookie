@@ -24,32 +24,29 @@ export class Recipe {
 
     const recipe = recipeResult.rows[0];
 
-    // Get ingredients
-    const ingredientsResult = await db.query(
-      `SELECT id, name, quantity, unit, notes
-       FROM recipe_ingredients
-       WHERE recipe_id = $1
-       ORDER BY order_index`,
-      [id]
-    );
-
-    // Get directions
-    const directionsResult = await db.query(
-      `SELECT instruction
-       FROM recipe_directions
-       WHERE recipe_id = $1
-       ORDER BY step_number`,
-      [id]
-    );
-
-    // Get categories
-    const categoriesResult = await db.query(
-      `SELECT category
-       FROM recipe_categories
-       WHERE recipe_id = $1
-       ORDER BY category`,
-      [id]
-    );
+    const [ingredientsResult, directionsResult, categoriesResult] = await Promise.all([
+      db.query(
+        `SELECT id, name, quantity, unit, notes
+         FROM recipe_ingredients
+         WHERE recipe_id = $1
+         ORDER BY order_index`,
+        [id]
+      ),
+      db.query(
+        `SELECT instruction
+         FROM recipe_directions
+         WHERE recipe_id = $1
+         ORDER BY step_number`,
+        [id]
+      ),
+      db.query(
+        `SELECT category
+         FROM recipe_categories
+         WHERE recipe_id = $1
+         ORDER BY category`,
+        [id]
+      ),
+    ]);
 
     return {
       ...recipe,
