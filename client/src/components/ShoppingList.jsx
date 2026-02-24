@@ -38,24 +38,25 @@ function ShoppingList({ items, onUpdateItems }) {
   return (
     <div className="shopping-list">
       <div className="shopping-list-header">
-        <h2>Shopping List</h2>
-        <p className="recipe-count">
-          {needToShop.length} {needToShop.length === 1 ? 'item' : 'items'} to shop
-        </p>
+        <div className="header-content">
+          <h2>Shopping List</h2>
+          <p className="recipe-count">
+            {needToShop.length} {needToShop.length === 1 ? 'item' : 'items'} to shop
+          </p>
+        </div>
+        <form onSubmit={handleAddItem} className="add-item-form">
+          <input
+            type="text"
+            value={newItem}
+            onChange={e => setNewItem(e.target.value)}
+            placeholder="Add item..."
+            className="add-item-input"
+          />
+          <button type="submit" className="add-item-button">
+            + Add Item
+          </button>
+        </form>
       </div>
-
-      <form onSubmit={handleAddItem} className="add-item-form">
-        <input
-          type="text"
-          value={newItem}
-          onChange={e => setNewItem(e.target.value)}
-          placeholder="Add item (e.g., paper towels)"
-          className="add-item-input"
-        />
-        <button type="submit" className="add-item-button">
-          + Add Item
-        </button>
-      </form>
 
       <section className="list-section">
         <h3>May Need to Shop ☐</h3>

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import { scrape } from 'recipe-scraper';
+import recipeScraper from 'recipe-scraper';
+const { scrape } = recipeScraper;
 
 /**
  * Fetch and extract recipe from URL

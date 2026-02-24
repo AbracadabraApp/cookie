@@ -1,41 +1,10 @@
-import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { recipes } from '../data/recipes';
-import { useShoppingListPersistence } from '../hooks/useShoppingListPersistence';
 import { getIngredientCounts } from '../utils/recipeUtils';
 import ShoppingList from '../components/ShoppingList';
-import RecipeDetail from '../components/RecipeDetail';
-import AddRecipe from '../components/AddRecipe';
 import './Demo.css';
 
-function Demo() {
-  const [selectedRecipe, setSelectedRecipe] = useState(null);
-  const [showAddRecipe, setShowAddRecipe] = useState(false);
-  const [shoppingListItems, setShoppingListItems] = useShoppingListPersistence();
-
-  // Store user's ingredient preferences per recipe (persists across modal opens)
-  const [recipeIngredientPrefs, setRecipeIngredientPrefs] = useState({});
-
-  const handleAddToShoppingList = newItems => {
-    const updated = [...shoppingListItems];
-
-    // Add new items or update existing ones
-    newItems.forEach(newItem => {
-      const existingIndex = updated.findIndex(item => item.ingredientId === newItem.ingredientId);
-      if (existingIndex >= 0) {
-        // Update existing item (preserve checked state from newItem)
-        updated[existingIndex] = { ...updated[existingIndex], ...newItem };
-      } else {
-        // Add new item
-        updated.push(newItem);
-      }
-    });
-
-    setShoppingListItems(updated);
-  };
-
-  const handleUpdateShoppingList = updatedItems => {
-    setShoppingListItems(updatedItems);
-  };
+function Demo({ shoppingListItems, onAddToShoppingList, onUpdateShoppingList }) {
 
   return (
     <div className="demo-page">
@@ -48,19 +17,19 @@ function Demo() {
         <section className="recipes-section">
           <div className="recipes-header">
             <h2>Recipe Library</h2>
-            <button className="add-recipe-button" onClick={() => setShowAddRecipe(true)}>
+            <Link to="/add-recipe" className="add-recipe-button">
               + Add Recipe
-            </button>
+            </Link>
           </div>
           <div className="recipe-cards">
             {recipes.map(recipe => {
               const { shopCount, haveCount } = getIngredientCounts(recipe);
 
               return (
-                <div
+                <Link
                   key={recipe.id}
+                  to={`/recipe/${recipe.id}`}
                   className="recipe-card"
-                  onClick={() => setSelectedRecipe(recipe)}
                 >
                   <h3>{recipe.title}</h3>
                   <p className="recipe-description">{recipe.description}</p>
@@ -80,40 +49,14 @@ function Demo() {
                     ))}
                   </div>
                   <p className="recipe-card-hint">Click to view recipe</p>
-                </div>
+                </Link>
               );
             })}
           </div>
         </section>
 
-        <ShoppingList items={shoppingListItems} onUpdateItems={handleUpdateShoppingList} />
+        <ShoppingList items={shoppingListItems} onUpdateItems={onUpdateShoppingList} />
       </main>
-
-      {selectedRecipe && (
-        <RecipeDetail
-          recipe={selectedRecipe}
-          onClose={() => setSelectedRecipe(null)}
-          onAddToShoppingList={handleAddToShoppingList}
-          shoppingListItems={shoppingListItems}
-          savedPreferences={recipeIngredientPrefs[selectedRecipe.id]}
-          onPreferencesChange={(prefs) => {
-            setRecipeIngredientPrefs(prev => ({
-              ...prev,
-              [selectedRecipe.id]: prefs
-            }));
-          }}
-        />
-      )}
-
-      {showAddRecipe && (
-        <AddRecipe
-          onClose={() => setShowAddRecipe(false)}
-          onRecipeAdded={() => {
-            // TODO: Reload recipes from localStorage
-            setShowAddRecipe(false);
-          }}
-        />
-      )}
     </div>
   );
 }

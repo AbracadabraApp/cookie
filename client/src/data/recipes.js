@@ -59,7 +59,7 @@ export const recipes = [
     directions: [
       "Heat olive oil in large skillet over medium heat until shimmering. Add shallots, season lightly with salt, and cook, stirring frequently, until softened but not browned (5-7 minutes).",
       "Add passata, then rinse bottle with 1/4 cup (60ml) water and add to skillet. Bring to simmer, season lightly with salt, and cook, stirring occasionally until slightly thickened (12-15 minutes).",
-      "Add 'nduja and break up with wooden spoon, stirring constantly until fully emulsified into sauce (about 1 minute).",
+      "Add nduja and break up with wooden spoon, stirring constantly until fully emulsified into sauce (about 1 minute).",
       "Meanwhile, cook pasta in salted boiling water until just softened on exterior but well shy of al dente. Transfer pasta to sauce with 1/2 cup pasta water.",
       "Increase heat to high and cook, stirring rapidly, until pasta is al dente and sauce coats noodles (about 2 minutes). Remove from heat, add half the cheese, and stir. Season with salt. Serve immediately with remaining cheese.",
     ],
