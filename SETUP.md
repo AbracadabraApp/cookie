@@ -13,7 +13,7 @@ Complete setup instructions for running Cookie locally on any machine.
 ### 1. Clone Repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/AbracadabraApp/cookie.git
 cd cookie
 ```
 

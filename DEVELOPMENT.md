@@ -10,7 +10,7 @@ Quick reference for developing Cookie across different machines.
 
 ```bash
 # 1. Clone
-git clone <your-repo-url>
+git clone https://github.com/AbracadabraApp/cookie.git
 cd cookie
 
 # 2. Read setup guide
