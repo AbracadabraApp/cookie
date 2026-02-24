@@ -4,45 +4,20 @@ import ShoppingList from '../ShoppingList';
 
 describe('ShoppingList', () => {
   describe('Rendering', () => {
-    it('renders the shopping list header', () => {
-      render(<ShoppingList items={[]} onUpdateItems={vi.fn()} />);
-      expect(screen.getByText('Shopping List')).toBeInTheDocument();
-    });
-
     it('renders empty state when no items', () => {
       render(<ShoppingList items={[]} onUpdateItems={vi.fn()} />);
       expect(screen.getByText(/No items yet/i)).toBeInTheDocument();
-      expect(screen.getByText(/Click a recipe/i)).toBeInTheDocument();
-    });
-
-    it('shows item count in header', () => {
-      const items = [
-        { ingredientId: '1', name: 'pasta', userHas: false },
-        { ingredientId: '2', name: 'chicken', userHas: false }
-      ];
-
-      render(<ShoppingList items={items} onUpdateItems={vi.fn()} />);
-      expect(screen.getByText('2 items to shop')).toBeInTheDocument();
-    });
-
-    it('shows singular item in header', () => {
-      const items = [
-        { ingredientId: '1', name: 'pasta', userHas: false }
-      ];
-
-      render(<ShoppingList items={items} onUpdateItems={vi.fn()} />);
-      expect(screen.getByText('1 item to shop')).toBeInTheDocument();
     });
 
     it('renders add item form', () => {
       render(<ShoppingList items={[]} onUpdateItems={vi.fn()} />);
       expect(screen.getByPlaceholderText(/Add item/i)).toBeInTheDocument();
-      expect(screen.getByText('+ Add Item')).toBeInTheDocument();
+      expect(screen.getByText('+')).toBeInTheDocument();
     });
   });
 
   describe('List Splitting', () => {
-    it('splits items into Need to Shop and Have On Hand sections', () => {
+    it('splits items into Need and Have sections', () => {
       const items = [
         { ingredientId: '1', name: 'pasta', userHas: false },
         { ingredientId: '2', name: 'salt', userHas: true }
@@ -50,8 +25,8 @@ describe('ShoppingList', () => {
 
       render(<ShoppingList items={items} onUpdateItems={vi.fn()} />);
 
-      expect(screen.getByText('May Need to Shop ☐')).toBeInTheDocument();
-      expect(screen.getByText('May Have On Hand ☑')).toBeInTheDocument();
+      expect(screen.getByText('Need')).toBeInTheDocument();
+      expect(screen.getByText('Have')).toBeInTheDocument();
     });
 
     it('treats undefined userHas as need to shop', () => {
@@ -62,37 +37,37 @@ describe('ShoppingList', () => {
 
       render(<ShoppingList items={items} onUpdateItems={vi.fn()} />);
 
-      const needToShopSection = screen.getByText('May Need to Shop ☐').closest('section');
-      expect(needToShopSection).toBeInTheDocument();
+      const needSection = screen.getByText('Need').closest('section');
+      expect(needSection).toBeInTheDocument();
 
-      // Should not show "Have On Hand" section when empty
-      expect(screen.queryByText('May Have On Hand ☑')).not.toBeInTheDocument();
+      // Should not show "Have" section when empty
+      expect(screen.queryByText('Have')).not.toBeInTheDocument();
     });
 
-    it('hides Have On Hand section when no items', () => {
+    it('hides Have section when no items have userHas=true', () => {
       const items = [
         { ingredientId: '1', name: 'pasta', userHas: false }
       ];
 
       render(<ShoppingList items={items} onUpdateItems={vi.fn()} />);
 
-      expect(screen.getByText('May Need to Shop ☐')).toBeInTheDocument();
-      expect(screen.queryByText('May Have On Hand ☑')).not.toBeInTheDocument();
+      expect(screen.getByText('Need')).toBeInTheDocument();
+      expect(screen.queryByText('Have')).not.toBeInTheDocument();
     });
 
-    it('shows Have On Hand section when items exist', () => {
+    it('shows Have section when items exist', () => {
       const items = [
         { ingredientId: '1', name: 'salt', userHas: true }
       ];
 
       render(<ShoppingList items={items} onUpdateItems={vi.fn()} />);
 
-      expect(screen.getByText('May Have On Hand ☑')).toBeInTheDocument();
+      expect(screen.getByText('Have')).toBeInTheDocument();
     });
   });
 
   describe('Checkbox Behavior', () => {
-    it('calls onUpdateItems when toggling Need to Shop checkbox', () => {
+    it('calls onUpdateItems when toggling Need checkbox', () => {
       const mockUpdate = vi.fn();
       const items = [
         { ingredientId: '1', name: 'pasta', userHas: false }
@@ -109,7 +84,7 @@ describe('ShoppingList', () => {
       ]);
     });
 
-    it('calls onUpdateItems when toggling Have On Hand checkbox', () => {
+    it('calls onUpdateItems when toggling Have checkbox', () => {
       const mockUpdate = vi.fn();
       const items = [
         { ingredientId: '1', name: 'salt', userHas: true }
@@ -180,7 +155,7 @@ describe('ShoppingList', () => {
       render(<ShoppingList items={[]} onUpdateItems={mockUpdate} />);
 
       const input = screen.getByPlaceholderText(/Add item/i);
-      const button = screen.getByText('+ Add Item');
+      const button = screen.getByText('+');
 
       fireEvent.change(input, { target: { value: 'paper towels' } });
       fireEvent.click(button);
@@ -198,7 +173,7 @@ describe('ShoppingList', () => {
       render(<ShoppingList items={[]} onUpdateItems={mockUpdate} />);
 
       const input = screen.getByPlaceholderText(/Add item/i);
-      const button = screen.getByText('+ Add Item');
+      const button = screen.getByText('+');
 
       fireEvent.change(input, { target: { value: 'paper towels' } });
       fireEvent.click(button);
@@ -211,7 +186,7 @@ describe('ShoppingList', () => {
       render(<ShoppingList items={[]} onUpdateItems={mockUpdate} />);
 
       const input = screen.getByPlaceholderText(/Add item/i);
-      const button = screen.getByText('+ Add Item');
+      const button = screen.getByText('+');
 
       fireEvent.change(input, { target: { value: '  paper towels  ' } });
       fireEvent.click(button);
@@ -224,7 +199,7 @@ describe('ShoppingList', () => {
       const mockUpdate = vi.fn();
       render(<ShoppingList items={[]} onUpdateItems={mockUpdate} />);
 
-      const button = screen.getByText('+ Add Item');
+      const button = screen.getByText('+');
       fireEvent.click(button);
 
       expect(mockUpdate).not.toHaveBeenCalled();
@@ -235,7 +210,7 @@ describe('ShoppingList', () => {
       render(<ShoppingList items={[]} onUpdateItems={mockUpdate} />);
 
       const input = screen.getByPlaceholderText(/Add item/i);
-      const button = screen.getByText('+ Add Item');
+      const button = screen.getByText('+');
 
       fireEvent.change(input, { target: { value: '   ' } });
       fireEvent.click(button);
@@ -248,7 +223,7 @@ describe('ShoppingList', () => {
       render(<ShoppingList items={[]} onUpdateItems={mockUpdate} />);
 
       const input = screen.getByPlaceholderText(/Add item/i);
-      const button = screen.getByText('+ Add Item');
+      const button = screen.getByText('+');
 
       fireEvent.change(input, { target: { value: 'item 1' } });
       fireEvent.click(button);
@@ -267,7 +242,7 @@ describe('ShoppingList', () => {
       render(<ShoppingList items={items} onUpdateItems={mockUpdate} />);
 
       const input = screen.getByPlaceholderText(/Add item/i);
-      const button = screen.getByText('+ Add Item');
+      const button = screen.getByText('+');
 
       fireEvent.change(input, { target: { value: 'paper towels' } });
       fireEvent.click(button);
@@ -291,7 +266,7 @@ describe('ShoppingList', () => {
       expect(screen.getByText(/pasta \(16 oz\)/i)).toBeInTheDocument();
     });
 
-    it('renders multiple items in Need to Shop list', () => {
+    it('renders multiple items in Need list', () => {
       const items = [
         { ingredientId: '1', name: 'pasta', userHas: false },
         { ingredientId: '2', name: 'chicken', userHas: false },
@@ -305,7 +280,7 @@ describe('ShoppingList', () => {
       expect(screen.getByText('tomatoes')).toBeInTheDocument();
     });
 
-    it('renders multiple items in Have On Hand list', () => {
+    it('renders multiple items in Have list', () => {
       const items = [
         { ingredientId: '1', name: 'salt', userHas: true },
         { ingredientId: '2', name: 'pepper', userHas: true },

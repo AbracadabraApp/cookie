@@ -156,38 +156,42 @@ function RecipeDetailPage({ shoppingListItems, onAddToShoppingList, savedPrefere
           </div>
         )}
 
-        <section className="recipe-section">
-          <h2>Ingredients</h2>
-          <p className="ingredients-instruction">
-            ✓ Check items you already have • Unchecked items will be added to your shopping list
-          </p>
-          <ul className="ingredients-list">
-            {recipe.ingredients.map(ing => (
-              <li key={ing.id} className="ingredient-item">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={checkedIngredients.has(ing.id)}
-                    onChange={() => handleIngredientToggle(ing.id)}
-                  />
-                  <span className="ingredient-text">{formatIngredientForRecipe(ing)}</span>
-                </label>
-              </li>
-            ))}
-          </ul>
-          <button className="making-this-button" onClick={handleMakingThis}>
-            I'm Making This
-          </button>
-        </section>
+        {recipe.ingredients && recipe.ingredients.length > 0 && (
+          <section className="recipe-section">
+            <h2>Ingredients</h2>
+            <p className="ingredients-instruction">
+              ✓ Check items you already have • Unchecked items will be added to your shopping list
+            </p>
+            <ul className="ingredients-list">
+              {recipe.ingredients.map(ing => (
+                <li key={ing.id} className="ingredient-item">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={checkedIngredients.has(ing.id)}
+                      onChange={() => handleIngredientToggle(ing.id)}
+                    />
+                    <span className="ingredient-text">{formatIngredientForRecipe(ing)}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+            <button className="making-this-button" onClick={handleMakingThis}>
+              I'm Making This
+            </button>
+          </section>
+        )}
 
-        <section className="recipe-section">
-          <h2>Directions</h2>
-          <ol className="directions-list">
-            {recipe.directions.map((step, idx) => (
-              <li key={idx}>{step}</li>
-            ))}
-          </ol>
-        </section>
+        {recipe.directions && recipe.directions.length > 0 && (
+          <section className="recipe-section">
+            <h2>Directions</h2>
+            <ol className="directions-list">
+              {recipe.directions.map((step, idx) => (
+                <li key={idx}>{step}</li>
+              ))}
+            </ol>
+          </section>
+        )}
 
         {recipe.categories && recipe.categories.length > 0 && (
           <section className="recipe-section">
