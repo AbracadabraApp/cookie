@@ -1,17 +1,26 @@
 # Cookie - Next Steps
 
-Last updated: 2025-02-23
+Last updated: 2025-02-24
 
 ## Session Summary
 
 ✅ **Completed Today:**
+- **Frontend UX Redesign:** Converted to NYT Cooking-inspired sophisticated design
+- **Navigation Overhaul:** Changed from modals to page-based routing with React Router
+- **Recipe Pages:** RecipeDetail now a full page with back button, shareable URLs
+- **Add Recipe Page:** Tabbed interface (URL / Upload PDF / Paste or Write)
+- **Checkbox Sync:** Fixed ingredient checkbox state persistence across page navigation
+- **Backend Integration:** Connected frontend to URL fetching and text parsing APIs
+- **Development Docs:** Created SETUP.md and DEVELOPMENT.md for machine-independent workflow
+- **Bug Fixes:** Fixed recipe-scraper import, nduja quote syntax, improved error logging
+
+✅ **Previously Completed:**
 - Built complete Cookie backend (Express + PostgreSQL)
 - Created all database schemas and migrations
 - Implemented Recipe CRUD endpoints
 - Added Claude API integration for recipe text parsing
 - Created Jarvis integration endpoint with auth
-- **NEW:** Added URL fetching capability (recipe-scraper + schema.org + Claude fallback)
-- Fixed frontend quote syntax error in recipes.js
+- Added URL fetching capability (recipe-scraper + schema.org + Claude fallback)
 - Comprehensive documentation (BACKEND_ARCHITECTURE.md, JARVIS_INTEGRATION.md, DEPLOYMENT.md)
 
 ## Immediate Next Steps
@@ -46,28 +55,19 @@ pm2 startup
 
 ---
 
-### 2. Update Frontend for URL Input
-**Status:** Backend ready, frontend needs UI
-**Time estimate:** 1-2 hours
+### 2. ~~Update Frontend for URL Input~~ ✅ DONE
+**Status:** Complete - tabbed interface implemented
 
-**Tasks:**
-- [ ] Add URL input tab to AddRecipe component
-- [ ] Create URL input form with validation
-- [ ] Implement preview/edit flow for fetched recipes
-- [ ] Add loading states and error handling
-- [ ] Test with real recipe URLs
+**Completed:**
+- ✅ Add URL input tab to AddRecipe page
+- ✅ Create URL input form with validation
+- ✅ Connected to backend API endpoint
+- ✅ Add loading states and error handling
+- ⏳ Test with real recipe URLs (needs backend running with PostgreSQL)
 
-**Files to modify:**
-- `client/src/components/AddRecipe.jsx` - Add URL input tab
-- `client/src/pages/Demo.jsx` - Hook up to API
-
-**API endpoint ready:**
-```javascript
-POST http://localhost:3000/api/recipes/url
-{
-  "url": "https://www.seriouseats.com/pasta-carbonara"
-}
-```
+**Files modified:**
+- `client/src/pages/AddRecipePage.jsx` - New page with tabs
+- `client/src/App.jsx` - Added route
 
 ---
 
@@ -255,12 +255,16 @@ When you want:
 - `server/src/db/schema.sql` - Database schema
 
 **Frontend:**
-- `client/src/pages/Demo.jsx` - Main app page
-- `client/src/components/RecipeDetail.jsx` - Recipe modal
+- `client/src/pages/Demo.jsx` - Main app page (recipe library + shopping list)
+- `client/src/pages/RecipeDetailPage.jsx` - Full recipe page
+- `client/src/pages/AddRecipePage.jsx` - Add recipe page with tabs
 - `client/src/components/ShoppingList.jsx` - Shopping list UI
-- `client/src/components/AddRecipe.jsx` - Recipe input form
+- `client/src/App.jsx` - React Router setup
 
 **Documentation:**
+- `SETUP.md` - First-time setup guide (NEW!)
+- `DEVELOPMENT.md` - Multi-machine development workflow (NEW!)
+- `TODO.md` - This file (task tracking)
 - `docs/BACKEND_ARCHITECTURE.md` - System design
 - `docs/JARVIS_INTEGRATION.md` - Jarvis setup
 - `server/DEPLOYMENT.md` - Mac Mini deployment
