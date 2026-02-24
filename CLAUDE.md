@@ -8,168 +8,87 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 cd client && npm run dev    # Start Vite dev server on http://localhost:5173
 npm run build               # Production build
-npm run preview             # Preview production build
+npm test -- --run           # Run tests once
 ```
 
 **Backend (server/):**
-Backend is not yet implemented. Database schema is defined in docs/DATA_MODEL.md but no server code exists yet.
+```bash
+cd server && npm run dev    # Start Express API on http://localhost:3001
+npm run db:migrate          # Apply schema.sql to PostgreSQL
+npm run db:seed             # Seed 34 recipe titles
+```
 
-**Current Development Mode:**
-The app currently runs as a frontend-only demo using localStorage for persistence. No backend server is running.
+**Full stack:** Run both `cd server && npm run dev` and `cd client && npm run dev`. Vite proxies `/api` to `localhost:3001`.
 
 ## Architecture Overview
 
-**Current State:** Frontend-only React app with hardcoded recipe data and localStorage persistence.
+- **Frontend:** React + Vite (port 5173), fetches recipes from API
+- **Backend:** Express (port 3001) + PostgreSQL (port 5432, database `cookie`)
+- **Database:** PostgreSQL with UUID primary keys. Schema in `server/src/db/schema.sql`
+- **AI Integration:** Claude API for recipe text/PDF parsing (`server/src/services/claude.js`)
 
-**Planned Architecture:**
-- **Frontend:** React + Vite client making API calls to Express backend
-- **Backend:** Node.js + Express handling recipe CRUD and calling Anthropic Claude API
-- **Database:** PostgreSQL for recipes, ingredients, shopping lists, pantry items
-- **AI Integration:** Claude extracts structured ingredients from recipe text/PDFs
+### Key Data Flow
 
-### Key Data Flow (Current)
+1. Backend serves shared recipe catalog from PostgreSQL (`GET /api/recipes`, `GET /api/recipes/:id`)
+2. Frontend fetches recipes via `useRecipes()` hook → `client/src/services/api.js`
+3. User checks recipes (planning to make) → `useUserRecipeState` persists to localStorage
+4. Checking a recipe triggers `useRecipeCache` to eagerly fetch full recipe detail (with ingredients)
+5. Shopping list is **computed** by `useComputedShoppingList` from checked recipes, cached details, and ingredient have/need state
+6. Recipe detail page shows ingredient checkboxes — checked = "I have this", unchecked = "I need this"
+7. Toggling ingredients on recipe page updates `useIngredientState` → shopping list recomputes automatically
+8. Manual items via `useManualItems` are independent of recipes
 
-1. User views recipe cards on Demo page (`client/src/pages/Demo.jsx`)
-2. Clicks recipe → RecipeDetail modal opens with ingredient checkboxes
-3. AI pre-checks likely pantry items using `isLikelyInPantry()` from `shoppingListUtils.js`
-4. User checks/unchecks ingredients (I have this / I don't have this)
-5. Clicks "I'm Making This" → adds ALL ingredients to shopping list with `userHas` boolean
-6. Shopping list splits into two sections: "May Need to Shop" (userHas=false) and "May Have On Hand" (userHas=true)
-7. User can toggle checkboxes to move items between lists
-8. All state persisted to localStorage
-
-### Key Data Flow (Planned)
-
-1. User pastes recipe text or uploads PDF
-2. Frontend sends to backend `/api/recipes/extract`
-3. Backend calls Claude API to parse structured ingredients
-4. Backend saves to PostgreSQL (Recipes + RecipeIngredients tables)
-5. User selects recipes for meal plan
-6. Backend aggregates ingredients across recipes, subtracts on-hand pantry items
-7. Returns consolidated shopping list with smart formatting
+### Shopping List Rules (from TECH_DECISIONS.md)
+1. Check a recipe → its missing ingredients go on the list
+2. Uncheck a recipe → its ingredients come off
+3. Quantities aggregate across recipes (2 recipes x 1 onion = 2 onions)
+4. Recipe page is source of truth for ingredient have/need state
+5. Shopping list = unchecked ingredients across checked recipes, minus on-hand
 
 ## Critical Business Logic
 
 ### Shopping List Formatting (`client/src/utils/shoppingListUtils.js`)
 
-Two separate formatting functions:
+- **`formatIngredientForRecipe(item)`**: Full measurements for cooking
+- **`formatIngredient(item)`**: Simplified for shopping (countable → count, weight → oz, else just name)
 
-- **`formatIngredientForRecipe(item)`**: Full measurements for cooking (e.g., "2 tablespoons fresh parsley (finely chopped)")
-- **`formatIngredient(item)`**: Simplified for shopping (e.g., "fresh parsley" or "dried pasta (16 oz)")
+### State Hooks (`client/src/hooks/`)
+- `useRecipes.js` — fetches recipe list from API
+- `useUserRecipeState.js` — checked recipes + custom ordering (localStorage)
+- `useIngredientState.js` — which ingredients user has on hand (localStorage)
+- `useRecipeCache.js` — caches full recipe details for checked recipes
+- `useComputedShoppingList.js` — pure computation: needItems + haveItems
+- `useManualItems.js` — manually added shopping list items (localStorage)
 
-Shopping list formatting rules:
-- **Countable items**: Show count (e.g., "2 shallots", "2 chicken breasts")
-- **Weight items**: Show weight in oz (e.g., "dried pasta (16 oz)")
-- **Everything else**: Just the name (e.g., "garlic", "olive oil")
-
-### AI Pantry Detection
-
-`isLikelyInPantry()` checks ingredient names against `COMMON_PANTRY_ITEMS` array (salt, pepper, oils, flour, sugar). Used to pre-check boxes in recipe detail view.
-
-### User Learning System
-
-When user clicks "I'm Making This", ALL ingredients are added to shopping list with `userHas` boolean:
-- `userHas: true` → item goes to "May Have On Hand" list
-- `userHas: false` → item goes to "May Need to Shop" list
-
-This captures user feedback for future ML training (which items they actually have vs. what AI guessed).
-
-## Important Patterns
-
-### Recipe Data Structure
-
-Currently hardcoded in `client/src/data/recipes.js`:
-
-```javascript
-{
-  id: 1,
-  title: "Recipe Name",
-  description: "...",
-  source: "Serious Eats",
-  notes: "...",
-  prepTime: 30,
-  cookTime: 45,
-  totalTime: 75,
-  servings: 4,
-  ingredients: [
-    {
-      id: 'ing-1',
-      quantity: 2,
-      unit: 'tablespoons',
-      name: 'olive oil',
-      notes: 'extra-virgin'
-    }
-  ],
-  directions: ["Step 1...", "Step 2..."],
-  categories: ["Italian", "Pasta", "Dinner"]
-}
-```
-
-### Shopping List Item Structure
-
-```javascript
-{
-  ingredientId: 'ing-1',
-  name: 'olive oil',
-  quantity: 2,
-  unit: 'tablespoons',
-  notes: 'extra-virgin',
-  recipeTitle: 'Pasta with Tomato Sauce',
-  recipeId: 1,
-  userHas: false,  // User said they don't have this
-  checked: false   // Not yet purchased (for in-store checking)
-}
-```
-
-## Known Limitations & Future Work
-
-- No backend server yet (planned: Node.js + Express)
-- No database (planned: PostgreSQL)
-- No Claude API integration yet (planned: recipe parsing from text/PDF)
-- Recipes are hardcoded in `client/src/data/recipes.js`
-- No user authentication
-- No recipe import functionality (AddRecipe component is UI-only placeholder)
-- localStorage used for shopping list persistence (will move to database)
+### App.jsx Wiring
+All hooks are composed in `App.jsx` and passed down as props. `App.jsx` also handles:
+- Eagerly prefetching recipe details when recipes are checked
+- Clearing ingredient have-state when a recipe is unchecked
 
 ## Testing
 
-**Run tests:**
 ```bash
-cd client && npm test              # Watch mode
-npm run test:coverage              # With coverage report
+cd client && npm test -- --run    # 101 tests
 ```
 
-**Test structure:**
-- `src/utils/__tests__/` - Unit tests for pure functions (100% coverage)
-- `src/components/__tests__/` - Component tests with React Testing Library
-- `src/__tests__/integration/` - End-to-end integration tests
-
-**Coverage requirements:**
-- Utils: 100% coverage (statements, branches, functions, lines)
-- Components: 70%+ coverage
-- All tests must pass before merging
-
-**Current test stats:** 110 tests passing
-- Utils: 44 tests (shoppingListUtils, recipeUtils)
-- Components: 52 tests (ShoppingList, RecipeDetail)
-- Integration: 14 tests (shopping-flow)
-
-**Testing patterns:**
-- Use `vi.fn()` for mocks
-- Clear localStorage in `beforeEach` for integration tests
-- Test user interactions with fireEvent
-- Use `within()` for scoped queries
-- Test both happy path and edge cases
+- `src/utils/__tests__/` — Unit tests for pure functions
+- `src/components/__tests__/` — Component tests (ShoppingList, RecipeDetail)
+- `src/__tests__/integration/` — Integration tests (shopping flow)
 
 ## Key Files
 
-- `client/src/pages/Demo.jsx` - Main page with recipe library and shopping list
-- `client/src/components/RecipeDetail.jsx` - Recipe modal with ingredient checkboxes
-- `client/src/components/ShoppingList.jsx` - Two-list shopping UI (Need to Shop / Have On Hand)
-- `client/src/utils/shoppingListUtils.js` - Business logic for formatting and pantry detection
-- `client/src/utils/recipeUtils.js` - Recipe helper functions (ingredient counts)
-- `client/src/hooks/useShoppingListPersistence.js` - localStorage management hook
-- `client/src/constants.js` - Application constants (storage keys, etc.)
-- `client/src/data/recipes.js` - Hardcoded recipe data (3 recipes)
-- `docs/DATA_MODEL.md` - Planned database schema
-- `docs/TECH_DECISIONS.md` - Technology choices and rationale
+| File | Purpose |
+|------|---------|
+| `client/src/App.jsx` | Root — composes all hooks, passes props to routes |
+| `client/src/pages/Demo.jsx` | Main view with List/Recipes toggle |
+| `client/src/pages/RecipeDetailPage.jsx` | Recipe detail with ingredient checkboxes |
+| `client/src/components/ShoppingList.jsx` | Computed Need/Have lists + manual items |
+| `client/src/services/api.js` | Fetch wrapper for `/api/recipes` |
+| `client/src/hooks/useComputedShoppingList.js` | Core shopping list computation |
+| `client/src/constants.js` | localStorage keys |
+| `server/src/index.js` | Express app entry point |
+| `server/src/models/Recipe.js` | Recipe CRUD with full detail queries |
+| `server/src/routes/recipes.js` | REST endpoints for recipes |
+| `server/src/db/schema.sql` | PostgreSQL schema |
+| `server/src/db/seed.js` | Seeds 34 meal titles |
+| `docs/TECH_DECISIONS.md` | Technology choices and rationale |

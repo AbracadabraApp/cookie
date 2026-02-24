@@ -52,6 +52,19 @@ A running log of technology choices and why we made them. This saves us from re-
 **Decision:** Jarvis POSTs to `/api/jarvis/recipe` endpoint with recipe text/URL.
 **Why:** Clean separation of concerns. Jarvis stays focused on message handling. Cookie handles recipe parsing. Shared secret token for auth. Extensible for other agents.
 
+### 2025-02-24 — Shopping list is computed, not manually managed
+
+**Decision:** The shopping list is a computed view, not a standalone editable list. The recipe detail page is the editing interface for ingredient state.
+
+**Rules:**
+1. **Check a recipe** (planning to make) → its *missing* ingredients get added to the shopping list
+2. **Uncheck a recipe** → its ingredients come off the shopping list
+3. **Quantities aggregate** — if 2 checked recipes each need 1 onion, the list shows 2 onions. Uncheck one recipe → list shows 1 onion
+4. **Recipe page is the source of truth** — each recipe shows all ingredients with checkboxes in recipe order. Checked = have it (on hand), unchecked = need it. Edits on the recipe page flow directly to the shopping list
+5. **Shopping list = sum of unchecked ingredients across all checked recipes, minus on-hand quantities**
+
+**Why:** Previous approach had bugs from trying to sync checked state between recipe pages and an independent shopping list. Simpler to make the list a pure computation. Recipe page edits are the single source of truth. Backend handles ingredient normalization so "onion" across recipes resolves to one canonical ingredient with aggregated quantities.
+
 ---
 
 *Add new decisions at the bottom as they come up. Date them so we have a timeline.*

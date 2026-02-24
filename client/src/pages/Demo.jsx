@@ -1,18 +1,27 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { recipes } from '../data/recipes';
-import { useUserRecipeState } from '../hooks/useUserRecipeState';
 import ShoppingList from '../components/ShoppingList';
 import './Demo.css';
 
-function Demo({ shoppingListItems, onAddToShoppingList, onUpdateShoppingList }) {
+function Demo({
+  orderedRecipes,
+  checkedRecipes,
+  onToggleChecked,
+  needItems,
+  haveItems,
+  manualItems,
+  onAddManualItem,
+  onToggleManualItem,
+  onToggleHave,
+  loading,
+  error,
+}) {
   const [view, setView] = useState('list');
-  const { orderedRecipes, checkedRecipes, toggleChecked } = useUserRecipeState(recipes);
 
   return (
     <div className="demo-page">
       <header className="demo-header">
-        <h1>🍪 Cookie</h1>
+        <h1>Cookie</h1>
         <select
           className="view-select"
           value={view}
@@ -25,19 +34,30 @@ function Demo({ shoppingListItems, onAddToShoppingList, onUpdateShoppingList }) 
 
       <main className="demo-main">
         {view === 'list' ? (
-          <ShoppingList items={shoppingListItems} onUpdateItems={onUpdateShoppingList} />
+          <ShoppingList
+            needItems={needItems}
+            haveItems={haveItems}
+            manualItems={manualItems}
+            onAddManualItem={onAddManualItem}
+            onToggleManualItem={onToggleManualItem}
+            onToggleHave={onToggleHave}
+          />
+        ) : loading ? (
+          <p className="loading-text">Loading recipes...</p>
+        ) : error ? (
+          <p className="error-text">Failed to load recipes</p>
         ) : (
           <div className="recipes-section">
             {orderedRecipes.map(recipe => (
               <div key={recipe.id} className="recipe-row">
                 <button
                   className={`recipe-checkbox${checkedRecipes.has(recipe.id) ? ' checked' : ''}`}
-                  onClick={() => toggleChecked(recipe.id)}
+                  onClick={() => onToggleChecked(recipe.id)}
                   aria-label={`Mark ${recipe.title} as ${checkedRecipes.has(recipe.id) ? 'unchecked' : 'checked'}`}
                 />
                 <Link
                   to={`/recipe/${recipe.id}`}
-                  className={`recipe-title${checkedRecipes.has(recipe.id) ? ' checked' : ''}`}
+                  className="recipe-title"
                 >
                   {recipe.title}
                 </Link>

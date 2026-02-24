@@ -72,6 +72,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+DROP TRIGGER IF EXISTS update_recipes_updated_at ON recipes;
 CREATE TRIGGER update_recipes_updated_at BEFORE UPDATE ON recipes
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

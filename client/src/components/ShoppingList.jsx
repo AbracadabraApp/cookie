@@ -1,57 +1,58 @@
 import { useState } from 'react';
-import { formatIngredient, splitShoppingList } from '../utils/shoppingListUtils';
+import { formatIngredient } from '../utils/shoppingListUtils';
 import './ShoppingList.css';
 
-function ShoppingList({ items = [], onUpdateItems }) {
+function ShoppingList({
+  needItems = [],
+  haveItems = [],
+  manualItems = [],
+  onAddManualItem,
+  onToggleManualItem,
+  onToggleHave,
+}) {
   const [newItem, setNewItem] = useState('');
-
-  const handleToggle = (itemIndex, currentUserHas) => {
-    const updated = items.map((item, idx) =>
-      idx === itemIndex ? { ...item, userHas: !currentUserHas } : item
-    );
-    onUpdateItems(updated);
-  };
 
   const handleAddItem = e => {
     e.preventDefault();
     if (newItem.trim()) {
-      const item = {
-        ingredientId: `manual-${Date.now()}`,
-        name: newItem.trim(),
-        quantity: null,
-        unit: null,
-        notes: null,
-        recipeTitle: 'Manual',
-        recipeId: null,
-        checked: false,
-        userHas: false
-      };
-      onUpdateItems([...items, item]);
+      onAddManualItem(newItem);
       setNewItem('');
     }
   };
 
-  const { needToShop, haveOnHand } = splitShoppingList(items);
+  // Toggle all ingredient IDs for a computed item (may span multiple recipes)
+  const handleToggleComputed = (item) => {
+    for (const id of item.ingredientIds) {
+      onToggleHave(id);
+    }
+  };
+
+  const manualNeed = manualItems.filter(i => !i.have);
+  const manualHave = manualItems.filter(i => i.have);
+
+  const hasNeed = needItems.length > 0 || manualNeed.length > 0;
+  const hasHave = haveItems.length > 0 || manualHave.length > 0;
+  const isEmpty = !hasNeed && !hasHave;
 
   return (
     <div className="shopping-list">
-      {needToShop.length === 0 && haveOnHand.length === 0 ? (
+      {isEmpty ? (
         <p className="empty-list">
-          No items yet. Open a recipe and tap "I'm Making This" to add ingredients.
+          No items yet. Check a recipe to add its ingredients.
         </p>
       ) : (
         <>
-          {needToShop.length > 0 && (
+          {hasNeed && (
             <section className="list-section">
               <h3>Need</h3>
               <ul className="ingredient-list">
-                {needToShop.map((item) => (
-                  <li key={`${item.ingredientId}-${item.originalIndex}`} className="ingredient-item">
+                {needItems.map((item) => (
+                  <li key={item.name} className="ingredient-item">
                     <label>
                       <input
                         type="checkbox"
                         checked={false}
-                        onChange={() => handleToggle(item.originalIndex, false)}
+                        onChange={() => handleToggleComputed(item)}
                       />
                       <span className="ingredient-text">
                         {formatIngredient(item)}
@@ -59,25 +60,49 @@ function ShoppingList({ items = [], onUpdateItems }) {
                     </label>
                   </li>
                 ))}
+                {manualNeed.map((item) => (
+                  <li key={item.id} className="ingredient-item">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={false}
+                        onChange={() => onToggleManualItem(item.id)}
+                      />
+                      <span className="ingredient-text">{item.name}</span>
+                    </label>
+                  </li>
+                ))}
               </ul>
             </section>
           )}
 
-          {haveOnHand.length > 0 && (
+          {hasHave && (
             <section className="list-section">
               <h3>Have</h3>
               <ul className="ingredient-list">
-                {haveOnHand.map((item) => (
-                  <li key={`${item.ingredientId}-${item.originalIndex}`} className="ingredient-item have">
+                {haveItems.map((item) => (
+                  <li key={item.name} className="ingredient-item have">
                     <label>
                       <input
                         type="checkbox"
                         checked={true}
-                        onChange={() => handleToggle(item.originalIndex, true)}
+                        onChange={() => handleToggleComputed(item)}
                       />
                       <span className="ingredient-text">
                         {formatIngredient(item)}
                       </span>
+                    </label>
+                  </li>
+                ))}
+                {manualHave.map((item) => (
+                  <li key={item.id} className="ingredient-item have">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={true}
+                        onChange={() => onToggleManualItem(item.id)}
+                      />
+                      <span className="ingredient-text">{item.name}</span>
                     </label>
                   </li>
                 ))}

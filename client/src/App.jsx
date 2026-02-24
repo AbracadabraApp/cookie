@@ -1,35 +1,40 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { useShoppingListPersistence } from './hooks/useShoppingListPersistence';
+import { useRecipes } from './hooks/useRecipes';
+import { useUserRecipeState } from './hooks/useUserRecipeState';
+import { useIngredientState } from './hooks/useIngredientState';
+import { useRecipeCache } from './hooks/useRecipeCache';
+import { useComputedShoppingList } from './hooks/useComputedShoppingList';
+import { useManualItems } from './hooks/useManualItems';
 import Demo from './pages/Demo';
 import RecipeDetailPage from './pages/RecipeDetailPage';
 import AddRecipePage from './pages/AddRecipePage';
 import './App.css';
 
 function App() {
-  const [shoppingListItems, setShoppingListItems] = useShoppingListPersistence();
-  const [recipeIngredientPrefs, setRecipeIngredientPrefs] = useState({});
+  const { recipes, loading, error } = useRecipes();
+  const { orderedRecipes, checkedRecipes, toggleChecked } = useUserRecipeState(recipes);
+  const { haveIngredients, toggleHave, clearForRecipe } = useIngredientState();
+  const { cache: recipeCache, prefetchRecipe } = useRecipeCache();
+  const { needItems, haveItems } = useComputedShoppingList(checkedRecipes, recipeCache, haveIngredients);
+  const { manualItems, addItem: addManualItem, toggleItem: toggleManualItem } = useManualItems();
 
-  const handleAddToShoppingList = newItems => {
-    const updated = [...shoppingListItems];
+  // Eagerly fetch full details for checked recipes
+  useEffect(() => {
+    for (const recipeId of checkedRecipes) {
+      prefetchRecipe(recipeId);
+    }
+  }, [checkedRecipes, prefetchRecipe]);
 
-    // Add new items or update existing ones
-    newItems.forEach(newItem => {
-      const existingIndex = updated.findIndex(item => item.ingredientId === newItem.ingredientId);
-      if (existingIndex >= 0) {
-        // Update existing item (preserve checked state from newItem)
-        updated[existingIndex] = { ...updated[existingIndex], ...newItem };
-      } else {
-        // Add new item
-        updated.push(newItem);
+  const handleToggleChecked = (recipeId) => {
+    // If unchecking, clear have-state for that recipe's ingredients
+    if (checkedRecipes.has(recipeId)) {
+      const cached = recipeCache.get(recipeId);
+      if (cached && cached.ingredients) {
+        clearForRecipe(cached.ingredients.map(i => i.id));
       }
-    });
-
-    setShoppingListItems(updated);
-  };
-
-  const handleUpdateShoppingList = updatedItems => {
-    setShoppingListItems(updatedItems);
+    }
+    toggleChecked(recipeId);
   };
 
   return (
@@ -39,9 +44,17 @@ function App() {
           path="/"
           element={
             <Demo
-              shoppingListItems={shoppingListItems}
-              onAddToShoppingList={handleAddToShoppingList}
-              onUpdateShoppingList={handleUpdateShoppingList}
+              orderedRecipes={orderedRecipes}
+              checkedRecipes={checkedRecipes}
+              onToggleChecked={handleToggleChecked}
+              needItems={needItems}
+              haveItems={haveItems}
+              manualItems={manualItems}
+              onAddManualItem={addManualItem}
+              onToggleManualItem={toggleManualItem}
+              onToggleHave={toggleHave}
+              loading={loading}
+              error={error}
             />
           }
         />
@@ -49,16 +62,8 @@ function App() {
           path="/recipe/:id"
           element={
             <RecipeDetailPage
-              shoppingListItems={shoppingListItems}
-              onAddToShoppingList={handleAddToShoppingList}
-              savedPreferences={null}
-              onPreferencesChange={(prefs) => {
-                // TODO: Get recipe ID from URL params
-                setRecipeIngredientPrefs(prev => ({
-                  ...prev,
-                  // [recipeId]: prefs
-                }));
-              }}
+              haveIngredients={haveIngredients}
+              onToggleHave={toggleHave}
             />
           }
         />

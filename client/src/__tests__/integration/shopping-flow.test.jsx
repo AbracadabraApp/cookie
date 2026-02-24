@@ -1,16 +1,31 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Demo from '../../pages/Demo';
 import ShoppingList from '../../components/ShoppingList';
 
-// Helper to render Demo with router context and required props
+const sampleRecipes = [
+  { id: '1', title: 'Pasta fagioli' },
+  { id: '2', title: 'Thai curry' },
+  { id: '3', title: 'Huevos Rancheros' },
+  { id: '4', title: 'Mongolian beef' },
+  { id: '5', title: 'Udon soup' },
+];
+
 function renderDemo(props = {}) {
   const defaultProps = {
-    shoppingListItems: [],
-    onAddToShoppingList: () => {},
-    onUpdateShoppingList: () => {},
-    ...props
+    orderedRecipes: sampleRecipes,
+    checkedRecipes: new Set(),
+    onToggleChecked: vi.fn(),
+    needItems: [],
+    haveItems: [],
+    manualItems: [],
+    onAddManualItem: vi.fn(),
+    onToggleManualItem: vi.fn(),
+    onToggleHave: vi.fn(),
+    loading: false,
+    error: null,
+    ...props,
   };
 
   return render(
@@ -37,7 +52,6 @@ describe('Recipe to Shopping List Integration', () => {
       const select = screen.getByRole('combobox');
       fireEvent.change(select, { target: { value: 'recipes' } });
 
-      // Should show recipe titles from the meals list
       expect(screen.getByText('Pasta fagioli')).toBeInTheDocument();
       expect(screen.getByText('Thai curry')).toBeInTheDocument();
     });
@@ -72,69 +86,59 @@ describe('Recipe to Shopping List Integration', () => {
       expect(screen.getByText(/No items yet/i)).toBeInTheDocument();
     });
 
-    it('displays shopping list items when provided', () => {
-      const items = [
-        { ingredientId: 'test-1', name: 'test ingredient', quantity: 1, unit: 'cup', userHas: false, recipeTitle: 'Test Recipe' }
-      ];
-
-      renderDemo({ shoppingListItems: items });
+    it('displays computed need items', () => {
+      renderDemo({
+        needItems: [
+          { name: 'test ingredient', quantity: null, unit: null, notes: null, recipes: ['R'], ingredientIds: ['1'] },
+        ],
+      });
       expect(screen.getByText('test ingredient')).toBeInTheDocument();
     });
   });
 
   describe('ShoppingList Component', () => {
     it('splits items into Need and Have sections', () => {
-      const items = [
-        { ingredientId: '1', name: 'pasta', userHas: false },
-        { ingredientId: '2', name: 'salt', userHas: true }
-      ];
-
-      render(<ShoppingList items={items} onUpdateItems={() => {}} />);
+      render(
+        <ShoppingList
+          needItems={[{ name: 'pasta', quantity: null, unit: null, notes: null, recipes: ['R'], ingredientIds: ['1'] }]}
+          haveItems={[{ name: 'salt', quantity: null, unit: null, notes: null, recipes: ['R'], ingredientIds: ['2'] }]}
+          manualItems={[]}
+          onAddManualItem={vi.fn()}
+          onToggleManualItem={vi.fn()}
+          onToggleHave={vi.fn()}
+        />
+      );
 
       expect(screen.getByText('Need')).toBeInTheDocument();
       expect(screen.getByText('Have')).toBeInTheDocument();
     });
 
     it('allows moving items between lists by toggling checkboxes', () => {
-      const mockUpdate = vi.fn();
-      const items = [
-        { ingredientId: '1', name: 'pasta', userHas: false },
-        { ingredientId: '2', name: 'salt', userHas: true }
-      ];
+      const mockToggleHave = vi.fn();
 
-      render(<ShoppingList items={items} onUpdateItems={mockUpdate} />);
+      render(
+        <ShoppingList
+          needItems={[{ name: 'pasta', quantity: null, unit: null, notes: null, recipes: ['R'], ingredientIds: ['id-1'] }]}
+          haveItems={[{ name: 'salt', quantity: null, unit: null, notes: null, recipes: ['R'], ingredientIds: ['id-2'] }]}
+          manualItems={[]}
+          onAddManualItem={vi.fn()}
+          onToggleManualItem={vi.fn()}
+          onToggleHave={mockToggleHave}
+        />
+      );
 
       const needSection = screen.getByText('Need').closest('section');
       const checkboxesInNeed = within(needSection).getAllByRole('checkbox');
       fireEvent.click(checkboxesInNeed[0]);
 
-      const updatedItems = mockUpdate.mock.calls[0][0];
-      expect(updatedItems[0].userHas).toBe(true);
-    });
-  });
-
-  describe('localStorage Persistence', () => {
-    it('renders pre-loaded items passed as props', () => {
-      const testItems = [
-        {
-          ingredientId: 'test-1',
-          name: 'test ingredient',
-          quantity: 1,
-          unit: 'cup',
-          userHas: false,
-          recipeTitle: 'Test Recipe'
-        }
-      ];
-
-      renderDemo({ shoppingListItems: testItems });
-      expect(screen.getByText('test ingredient')).toBeInTheDocument();
+      expect(mockToggleHave).toHaveBeenCalledWith('id-1');
     });
   });
 
   describe('Manual Item Addition', () => {
     it('allows adding manual items to the shopping list', () => {
-      const mockUpdate = vi.fn();
-      renderDemo({ onUpdateShoppingList: mockUpdate });
+      const mockAddManualItem = vi.fn();
+      renderDemo({ onAddManualItem: mockAddManualItem });
 
       const input = screen.getByPlaceholderText(/Add item/i);
       const button = screen.getByText('+');
@@ -142,21 +146,16 @@ describe('Recipe to Shopping List Integration', () => {
       fireEvent.change(input, { target: { value: 'paper towels' } });
       fireEvent.click(button);
 
-      expect(mockUpdate).toHaveBeenCalledTimes(1);
-      const addedItem = mockUpdate.mock.calls[0][0][0];
-      expect(addedItem.name).toBe('paper towels');
+      expect(mockAddManualItem).toHaveBeenCalledWith('paper towels');
     });
 
-    it('adds manual items to Need section by default', () => {
-      const items = [
-        { ingredientId: 'manual-1', name: 'manual item', userHas: false, recipeTitle: 'Manual' }
-      ];
-
-      renderDemo({ shoppingListItems: items });
+    it('shows manual need items in Need section', () => {
+      renderDemo({
+        manualItems: [{ id: 'manual-1', name: 'manual item', have: false }],
+      });
 
       const needSection = screen.getByText('Need').closest('section');
-      const needText = within(needSection);
-      expect(needText.getByText('manual item')).toBeInTheDocument();
+      expect(within(needSection).getByText('manual item')).toBeInTheDocument();
     });
   });
 });
