@@ -117,8 +117,7 @@ export class Recipe {
         );
       }
 
-      // Return full recipe
-      return await Recipe.findById(recipe.id);
+      return recipe;
     });
   }
 

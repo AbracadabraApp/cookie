@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import ShoppingList from '../components/ShoppingList';
 import './Demo.css';
@@ -17,19 +17,61 @@ function Demo({
   error,
 }) {
   const [view, setView] = useState('list');
+  const [addingItem, setAddingItem] = useState(false);
+  const [newItem, setNewItem] = useState('');
+  const inputRef = useRef(null);
+
+  const handleAddItem = e => {
+    e.preventDefault();
+    if (newItem.trim()) {
+      onAddManualItem(newItem);
+      setNewItem('');
+      setAddingItem(false);
+    }
+  };
+
+  const openAddItem = () => {
+    setAddingItem(true);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
 
   return (
     <div className="demo-page">
       <header className="demo-header">
-        <h1>Cookie</h1>
-        <select
-          className="view-select"
-          value={view}
-          onChange={e => setView(e.target.value)}
-        >
-          <option value="list">List</option>
-          <option value="recipes">Recipes</option>
-        </select>
+        <nav className="view-nav">
+          <button
+            className={`view-nav-item${view === 'list' ? ' active' : ''}`}
+            onClick={() => setView('list')}
+          >
+            {view === 'list' && <span className="view-nav-tri">▾</span>}List
+          </button>
+          <span className="view-nav-divider">|</span>
+          <button
+            className={`view-nav-item${view === 'recipes' ? ' active' : ''}`}
+            onClick={() => setView('recipes')}
+          >
+            {view === 'recipes' && <span className="view-nav-tri">▾</span>}Recipes
+          </button>
+        </nav>
+        {view === 'list' ? (
+          addingItem ? (
+            <form onSubmit={handleAddItem} className="header-add-form">
+              <input
+                ref={inputRef}
+                type="text"
+                value={newItem}
+                onChange={e => setNewItem(e.target.value)}
+                onBlur={() => { if (!newItem.trim()) setAddingItem(false); }}
+                placeholder="Add item..."
+                className="header-add-input"
+              />
+            </form>
+          ) : (
+            <button className="header-add-text" onClick={openAddItem}>+ Item</button>
+          )
+        ) : (
+          <Link to="/add-recipe" className="header-add-link">+ Add</Link>
+        )}
       </header>
 
       <main className="demo-main">
@@ -64,10 +106,6 @@ function Demo({
                 <span className="recipe-grip">⠿</span>
               </div>
             ))}
-            <Link to="/add-recipe" className="add-recipe-row">
-              <span className="add-recipe-icon">+</span>
-              <span className="add-recipe-text">Add recipe</span>
-            </Link>
           </div>
         )}
       </main>

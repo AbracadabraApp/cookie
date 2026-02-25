@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { formatIngredient } from '../utils/shoppingListUtils';
 import './ShoppingList.css';
 
@@ -6,20 +5,9 @@ function ShoppingList({
   needItems = [],
   haveItems = [],
   manualItems = [],
-  onAddManualItem,
   onToggleManualItem,
   onToggleHave,
 }) {
-  const [newItem, setNewItem] = useState('');
-
-  const handleAddItem = e => {
-    e.preventDefault();
-    if (newItem.trim()) {
-      onAddManualItem(newItem);
-      setNewItem('');
-    }
-  };
-
   // Toggle all ingredient IDs for a computed item (may span multiple recipes)
   const handleToggleComputed = (item) => {
     for (const id of item.ingredientIds) {
@@ -112,18 +100,6 @@ function ShoppingList({
         </>
       )}
 
-      <form onSubmit={handleAddItem} className="add-item-form">
-        <input
-          type="text"
-          value={newItem}
-          onChange={e => setNewItem(e.target.value)}
-          placeholder="Add item..."
-          className="add-item-input"
-        />
-        <button type="submit" className="add-item-button">
-          +
-        </button>
-      </form>
     </div>
   );
 }
