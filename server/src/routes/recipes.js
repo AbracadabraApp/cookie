@@ -1,23 +1,33 @@
 import express from 'express';
 import { Recipe } from '../models/Recipe.js';
 import { ValidationError, NotFoundError } from '../middleware/errorHandler.js';
-import { parseRecipeText } from '../services/claude.js';
+import { parseRecipeText, parseRecipeImage, parseRecipePDF } from '../services/claude.js';
 import { fetchRecipeFromUrl } from '../services/urlFetcher.js';
 import multer from 'multer';
 
 const router = express.Router();
 
-// Configure multer for PDF uploads
-const upload = multer({
+// Configure multer for file uploads
+const pdfUpload = multer({
   storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
-  },
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
       cb(new ValidationError('Only PDF files are allowed'));
+    }
+  }
+});
+
+const imageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new ValidationError('Only image files are allowed'));
     }
   }
 });
@@ -197,17 +207,37 @@ router.post('/parse', async (req, res, next) => {
   }
 });
 
-// POST /api/recipes/pdf - Parse PDF with Claude API (vision mode)
-router.post('/pdf', upload.single('file'), async (req, res, next) => {
+// POST /api/recipes/photo - Parse recipe from photo with Claude vision
+router.post('/photo', imageUpload.single('file'), async (req, res, next) => {
+  try {
+    if (!req.file) {
+      throw new ValidationError('Image file is required');
+    }
+
+    const parsed = await parseRecipeImage(req.file.buffer, req.file.mimetype);
+
+    res.json({
+      success: true,
+      data: parsed
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/recipes/pdf - Parse PDF with Claude API
+router.post('/pdf', pdfUpload.single('file'), async (req, res, next) => {
   try {
     if (!req.file) {
       throw new ValidationError('PDF file is required');
     }
 
-    // TODO: Implement PDF parsing with Claude vision API
-    // For now, return error
-    throw new Error('PDF parsing not yet implemented');
+    const parsed = await parseRecipePDF(req.file.buffer);
 
+    res.json({
+      success: true,
+      data: parsed
+    });
   } catch (error) {
     next(error);
   }

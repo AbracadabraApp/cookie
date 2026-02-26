@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getRecipe } from '../services/api';
 import { formatIngredientForRecipe } from '../utils/shoppingListUtils';
 import './RecipeDetailPage.css';
@@ -61,8 +61,11 @@ function RecipeDetailPage({ haveIngredients, onToggleHave }) {
         </button>
 
         <header className="recipe-header">
-          <h1>{recipe.title}</h1>
-          {recipe.source && <p className="recipe-source">Source: {recipe.source}</p>}
+          <div className="recipe-title-row">
+            <h1>{recipe.title}</h1>
+            <Link to={`/recipe/${id}/edit`} className="edit-link">Edit</Link>
+          </div>
+          {recipe.source && <span className="recipe-source-tag">{recipe.source}</span>}
         </header>
 
         {recipe.description && (
@@ -82,28 +85,29 @@ function RecipeDetailPage({ haveIngredients, onToggleHave }) {
           </div>
         )}
 
-        {recipe.ingredients && recipe.ingredients.length > 0 && (
-          <section className="recipe-section">
-            <h2>Ingredients</h2>
-            <p className="ingredients-instruction">
-              Checked = have it. Unchecked = need it (shows on shopping list).
-            </p>
-            <ul className="ingredients-list">
-              {recipe.ingredients.map(ing => (
-                <li key={ing.id} className="ingredient-item">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={haveIngredients.has(ing.id)}
-                      onChange={() => onToggleHave(ing.id)}
-                    />
-                    <span className="ingredient-text">{formatIngredientForRecipe(ing)}</span>
-                  </label>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+        <section className="recipe-section">
+          <h2>Ingredients</h2>
+          {recipe.ingredients && recipe.ingredients.length > 0 ? (
+            <>
+              <ul className="ingredients-list">
+                {recipe.ingredients.map(ing => (
+                  <li key={ing.id} className="ingredient-item">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={haveIngredients.has(ing.id)}
+                        onChange={() => onToggleHave(ing.id)}
+                      />
+                      <span className="ingredient-text">{formatIngredientForRecipe(ing)}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="empty-state">No ingredients yet</p>
+          )}
+        </section>
 
         {recipe.directions && recipe.directions.length > 0 && (
           <section className="recipe-section">

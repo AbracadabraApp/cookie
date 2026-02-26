@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createRecipe } from '../services/api';
 import './AddRecipePage.css';
@@ -34,6 +34,17 @@ async function fetchAPI(url, body) {
   return json.data;
 }
 
+async function uploadFile(url, file) {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch(url, { method: 'POST', body: form });
+  const json = await res.json();
+  if (!res.ok) {
+    throw new Error(json.error?.message || `Upload failed (${res.status})`);
+  }
+  return json.data;
+}
+
 function AddRecipePage() {
   const navigate = useNavigate();
   const [recipeText, setRecipeText] = useState('');
@@ -42,6 +53,7 @@ function AddRecipePage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [added, setAdded] = useState(null); // { id, title }
+  const photoInputRef = useRef(null);
 
   const saveRecipe = async (parsed, source, sourceType) => {
     const data = toSnakeCase({ ...parsed, source, source_type: sourceType });
@@ -93,7 +105,31 @@ function AddRecipePage() {
     }
   };
 
-  const handleFileUpload = async e => {
+  const handlePhotoUpload = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please select an image file');
+      return;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+    setAdded(null);
+
+    try {
+      const parsed = await uploadFile('/api/recipes/photo', file);
+      await saveRecipe(parsed, 'Photo', 'photo');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsProcessing(false);
+      if (photoInputRef.current) photoInputRef.current.value = '';
+    }
+  };
+
+  const handlePdfUpload = async e => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -102,7 +138,18 @@ function AddRecipePage() {
       return;
     }
 
-    setError('PDF extraction coming soon.');
+    setIsProcessing(true);
+    setError(null);
+    setAdded(null);
+
+    try {
+      const parsed = await uploadFile('/api/recipes/pdf', file);
+      await saveRecipe(parsed, 'PDF', 'pdf');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -133,17 +180,24 @@ function AddRecipePage() {
           </button>
           <button
             type="button"
+            className={`tab ${inputMethod === 'photo' ? 'active' : ''}`}
+            onClick={() => setInputMethod('photo')}
+          >
+            Photo
+          </button>
+          <button
+            type="button"
             className={`tab ${inputMethod === 'pdf' ? 'active' : ''}`}
             onClick={() => setInputMethod('pdf')}
           >
-            Upload PDF
+            PDF
           </button>
           <button
             type="button"
             className={`tab ${inputMethod === 'text' ? 'active' : ''}`}
             onClick={() => setInputMethod('text')}
           >
-            Paste or Write
+            Paste
           </button>
         </div>
 
@@ -185,6 +239,39 @@ function AddRecipePage() {
           </form>
         )}
 
+        {inputMethod === 'photo' && (
+          <form>
+            <div className="input-section">
+              <label htmlFor="recipe-photo">Take or Choose Photo</label>
+              <input
+                ref={photoInputRef}
+                id="recipe-photo"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handlePhotoUpload}
+                disabled={isProcessing}
+              />
+              <p className="input-hint">
+                {isProcessing ? 'Extracting recipe from photo...' : 'Take a photo of a recipe or choose from your gallery'}
+              </p>
+            </div>
+
+            {error && <div className="error-message">{error}</div>}
+
+            <div className="button-group">
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                className="cancel-button"
+                disabled={isProcessing}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+
         {inputMethod === 'pdf' && (
           <form>
             <div className="input-section">
@@ -193,10 +280,12 @@ function AddRecipePage() {
                 id="recipe-pdf"
                 type="file"
                 accept=".pdf"
-                onChange={handleFileUpload}
+                onChange={handlePdfUpload}
                 disabled={isProcessing}
               />
-              <p className="input-hint">Choose a PDF file from your cookbook or saved recipes</p>
+              <p className="input-hint">
+                {isProcessing ? 'Extracting recipe from PDF...' : 'Choose a PDF file from your cookbook or saved recipes'}
+              </p>
             </div>
 
             {error && <div className="error-message">{error}</div>}

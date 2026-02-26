@@ -1,3 +1,4 @@
+import { useState, useRef } from 'react';
 import { formatIngredient } from '../utils/shoppingListUtils';
 import './ShoppingList.css';
 
@@ -5,9 +6,20 @@ function ShoppingList({
   needItems = [],
   haveItems = [],
   manualItems = [],
+  onAddManualItem,
   onToggleManualItem,
   onToggleHave,
 }) {
+  const [newItem, setNewItem] = useState('');
+  const inputRef = useRef(null);
+
+  const handleAddItem = e => {
+    e.preventDefault();
+    if (newItem.trim()) {
+      onAddManualItem(newItem);
+      setNewItem('');
+    }
+  };
   // Toggle all ingredient IDs for a computed item (may span multiple recipes)
   const handleToggleComputed = (item) => {
     for (const id of item.ingredientIds) {
@@ -32,7 +44,20 @@ function ShoppingList({
         <>
           {hasNeed && (
             <section className="list-section">
-              <h3>Need</h3>
+              <div className="section-header">
+                <h2>Need</h2>
+              </div>
+              <form onSubmit={handleAddItem} className="inline-add-form">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={newItem}
+                  onChange={e => setNewItem(e.target.value)}
+                  placeholder="Add item..."
+                  className="inline-add-input"
+                />
+                <button type="submit" className="inline-add-btn">+</button>
+              </form>
               <ul className="ingredient-list">
                 {needItems.map((item) => (
                   <li key={item.name} className="ingredient-item">
@@ -66,7 +91,7 @@ function ShoppingList({
 
           {hasHave && (
             <section className="list-section">
-              <h3>Have</h3>
+              <h2>Have</h2>
               <ul className="ingredient-list">
                 {haveItems.map((item) => (
                   <li key={item.name} className="ingredient-item have">

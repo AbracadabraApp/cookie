@@ -1,12 +1,11 @@
 -- Cookie Database Schema
 -- Phase 1: Shared recipe catalog (no auth)
 
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- gen_random_uuid() is native in PG 13+ (no extension needed)
 
 -- Recipes table
 CREATE TABLE IF NOT EXISTS recipes (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title VARCHAR(255) NOT NULL,
   description TEXT,
   source VARCHAR(500), -- URL, book name, or "Manual"
@@ -22,7 +21,7 @@ CREATE TABLE IF NOT EXISTS recipes (
 
 -- Recipe ingredients (embedded, not normalized yet)
 CREATE TABLE IF NOT EXISTS recipe_ingredients (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   recipe_id UUID NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL, -- e.g., "olive oil", "chicken breast"
   quantity DECIMAL(10, 2), -- nullable for "to taste"
@@ -34,7 +33,7 @@ CREATE TABLE IF NOT EXISTS recipe_ingredients (
 
 -- Recipe directions (steps)
 CREATE TABLE IF NOT EXISTS recipe_directions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   recipe_id UUID NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
   step_number INTEGER NOT NULL,
   instruction TEXT NOT NULL,
@@ -44,7 +43,7 @@ CREATE TABLE IF NOT EXISTS recipe_directions (
 
 -- Recipe categories/tags
 CREATE TABLE IF NOT EXISTS recipe_categories (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   recipe_id UUID NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
   category VARCHAR(100) NOT NULL, -- Italian, Dinner, Quick, Vegetarian
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

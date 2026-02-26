@@ -9,11 +9,12 @@ import { useManualItems } from './hooks/useManualItems';
 import Demo from './pages/Demo';
 import RecipeDetailPage from './pages/RecipeDetailPage';
 import AddRecipePage from './pages/AddRecipePage';
+import EditRecipePage from './pages/EditRecipePage';
 import './App.css';
 
 function App() {
   const { recipes, loading, error } = useRecipes();
-  const { orderedRecipes, checkedRecipes, toggleChecked } = useUserRecipeState(recipes);
+  const { orderedRecipes, checkedRecipes, toggleChecked, reorder } = useUserRecipeState(recipes);
   const { haveIngredients, toggleHave, clearForRecipe } = useIngredientState();
   const { cache: recipeCache, prefetchRecipe } = useRecipeCache();
   const { needItems, haveItems } = useComputedShoppingList(checkedRecipes, recipeCache, haveIngredients);
@@ -53,6 +54,7 @@ function App() {
               onAddManualItem={addManualItem}
               onToggleManualItem={toggleManualItem}
               onToggleHave={toggleHave}
+              onReorder={reorder}
               loading={loading}
               error={error}
             />
@@ -68,6 +70,7 @@ function App() {
           }
         />
         <Route path="/add-recipe" element={<AddRecipePage />} />
+        <Route path="/recipe/:id/edit" element={<EditRecipePage />} />
       </Routes>
     </BrowserRouter>
   );

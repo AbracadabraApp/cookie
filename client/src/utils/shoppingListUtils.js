@@ -94,6 +94,54 @@ export function consolidateShoppingList(recipes) {
 }
 
 /**
+ * Convert a decimal number to cookbook-style fraction string
+ * e.g. 0.25 → "1/4", 0.5 → "1/2", 1.75 → "1 3/4", 2 → "2"
+ */
+export function toCookbookQuantity(num) {
+  if (num == null) return null;
+
+  const fractions = [
+    [0.125, '1/8'],
+    [0.25, '1/4'],
+    [0.333, '1/3'],
+    [0.375, '3/8'],
+    [0.5, '1/2'],
+    [0.667, '2/3'],
+    [0.75, '3/4'],
+  ];
+
+  const whole = Math.floor(num);
+  const decimal = num - whole;
+
+  if (decimal < 0.05) {
+    return String(whole || '0');
+  }
+
+  let fracStr = '';
+  let closest = null;
+  let closestDiff = 1;
+  for (const [val, str] of fractions) {
+    const diff = Math.abs(decimal - val);
+    if (diff < closestDiff) {
+      closestDiff = diff;
+      closest = str;
+    }
+  }
+
+  if (closestDiff < 0.05) {
+    fracStr = closest;
+  } else {
+    // No close fraction match — round to nearest integer
+    return String(Math.round(num));
+  }
+
+  if (whole > 0) {
+    return `${whole} ${fracStr}`;
+  }
+  return fracStr;
+}
+
+/**
  * Format ingredient for recipe display (with full measurements for cooking)
  * @param {Object} item - Ingredient item
  * @returns {String} - Formatted string with measurements
@@ -103,7 +151,7 @@ export function formatIngredientForRecipe(item) {
   let parts = [];
 
   if (quantity) {
-    parts.push(quantity);
+    parts.push(toCookbookQuantity(Number(quantity)));
   }
 
   if (unit) {

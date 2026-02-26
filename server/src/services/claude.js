@@ -139,13 +139,127 @@ Return ONLY the JSON object, no additional text.`;
   }
 }
 
+const RECIPE_JSON_SCHEMA = `{
+  "title": "Recipe Title",
+  "description": "Brief description of the dish",
+  "prepTime": 15,
+  "cookTime": 30,
+  "totalTime": 45,
+  "servings": 4,
+  "notes": "Any cooking tips or notes",
+  "ingredients": [
+    { "name": "olive oil", "quantity": 2, "unit": "tablespoons", "notes": "extra-virgin" }
+  ],
+  "directions": ["Step 1 instruction", "Step 2 instruction"],
+  "categories": ["Italian", "Pasta", "Dinner"]
+}`;
+
+const RECIPE_RULES = `Rules:
+1. ingredient.name = base ingredient (e.g., "chicken breast")
+2. ingredient.quantity = a number (null for "to taste")
+3. ingredient.unit = standardized (cup, tablespoon, teaspoon, ounce, pound, etc.)
+4. ingredient.notes = preparation/modifiers (diced, fresh, etc.)
+5. directions = clear, actionable steps in order
+6. categories = 2-5 relevant tags
+7. Missing info = null (not empty string)
+8. Extract times in minutes, servings as number
+Return ONLY the JSON object.`;
+
 /**
- * Parse recipe from PDF (using Claude vision API)
+ * Parse recipe from a photo using Claude vision API
+ * @param {Buffer} imageBuffer - Image file buffer
+ * @param {string} mimeType - Image MIME type (image/jpeg, image/png, etc.)
+ * @returns {Promise<Object>} Parsed recipe data
+ */
+export async function parseRecipeImage(imageBuffer, mimeType) {
+  const base64 = imageBuffer.toString('base64');
+
+  const message = await anthropic.messages.create({
+    model: MODEL,
+    max_tokens: 4096,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'image',
+            source: { type: 'base64', media_type: mimeType, data: base64 },
+          },
+          {
+            type: 'text',
+            text: `Extract the recipe from this image and return a JSON object:\n${RECIPE_JSON_SCHEMA}\n\n${RECIPE_RULES}`,
+          },
+        ],
+      },
+    ],
+  });
+
+  return normalizeClaudeResponse(message);
+}
+
+/**
+ * Parse recipe from PDF using Claude's native PDF support
  * @param {Buffer} pdfBuffer - PDF file buffer
  * @returns {Promise<Object>} Parsed recipe data
  */
 export async function parseRecipePDF(pdfBuffer) {
-  // TODO: Implement PDF parsing using Claude's vision API
-  // This requires converting PDF pages to images first
-  throw new Error('PDF parsing not yet implemented');
+  const base64 = pdfBuffer.toString('base64');
+
+  const message = await anthropic.messages.create({
+    model: MODEL,
+    max_tokens: 4096,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'document',
+            source: { type: 'base64', media_type: 'application/pdf', data: base64 },
+          },
+          {
+            type: 'text',
+            text: `Extract the recipe from this PDF and return a JSON object:\n${RECIPE_JSON_SCHEMA}\n\n${RECIPE_RULES}`,
+          },
+        ],
+      },
+    ],
+  });
+
+  return normalizeClaudeResponse(message);
+}
+
+function normalizeClaudeResponse(message) {
+  const responseText = message.content[0].text;
+  let jsonText = responseText.trim();
+
+  if (jsonText.startsWith('```json')) {
+    jsonText = jsonText.replace(/^```json\n/, '').replace(/\n```$/, '');
+  } else if (jsonText.startsWith('```')) {
+    jsonText = jsonText.replace(/^```\n/, '').replace(/\n```$/, '');
+  }
+
+  const parsed = JSON.parse(jsonText);
+
+  if (!parsed.title?.trim()) throw new Error('No recipe title extracted');
+  if (!parsed.ingredients?.length) throw new Error('No ingredients extracted');
+  if (!parsed.directions?.length) throw new Error('No directions extracted');
+
+  return {
+    title: parsed.title.trim(),
+    description: parsed.description?.trim() || null,
+    prepTime: parsed.prepTime || null,
+    cookTime: parsed.cookTime || null,
+    totalTime: parsed.totalTime || null,
+    servings: parsed.servings || null,
+    notes: parsed.notes?.trim() || null,
+    ingredients: parsed.ingredients.map((ing, index) => ({
+      name: ing.name.trim(),
+      quantity: ing.quantity || null,
+      unit: ing.unit?.trim() || null,
+      notes: ing.notes?.trim() || null,
+      order_index: index,
+    })),
+    directions: parsed.directions.map(dir => dir.trim()),
+    categories: parsed.categories || [],
+  };
 }
