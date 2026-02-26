@@ -1,0 +1,9 @@
+{
+  "name": "cookie",
+  "private": true,
+  "scripts": {
+    "install:all": "cd server && npm ci && cd ../client && npm ci",
+    "build": "cd client && npm run build && mkdir -p ../server/public && cp -r dist/* ../server/public/",
+    "start": "cd server && npm run db:migrate && npm run db:seed && npm start"
+  }
+}

@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'url';
+import path from 'path';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -8,14 +10,18 @@ import jarvisRoutes from './routes/jarvis.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { db } from './db/index.js';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 // Load environment variables
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Security middleware
-app.use(helmet());
+// Security middleware — relax CSP for serving frontend
+app.use(helmet({
+  contentSecurityPolicy: false,
+}));
 
 // CORS configuration
 const allowedOrigins = process.env.ALLOWED_ORIGINS
@@ -62,14 +68,20 @@ app.get('/api/health', async (req, res) => {
 app.use('/api/recipes', recipeRoutes);
 app.use('/api/jarvis', jarvisRoutes);
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    error: {
-      code: 'NOT_FOUND',
-      message: `Route ${req.method} ${req.path} not found`
-    }
+// Serve frontend static files in production
+const publicDir = path.resolve(__dirname, '../public');
+app.use(express.static(publicDir));
+
+// SPA fallback — serve index.html for non-API routes
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({
+      success: false,
+      error: { code: 'NOT_FOUND', message: `Route ${req.method} ${req.path} not found` }
+    });
+  }
+  res.sendFile(path.join(publicDir, 'index.html'), err => {
+    if (err) next(err);
   });
 });
 

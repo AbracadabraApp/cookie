@@ -38,11 +38,15 @@ const MEAL_TITLES = [
 ];
 
 async function seed() {
-  console.log('🌱 Seeding database with 34 meal titles...');
-
   try {
-    // Clear existing data
-    await db.query('DELETE FROM recipes');
+    // Only seed if database is empty
+    const { rows } = await db.query('SELECT COUNT(*) FROM recipes');
+    if (parseInt(rows[0].count) > 0) {
+      console.log(`🌱 Database already has ${rows[0].count} recipes, skipping seed`);
+      process.exit(0);
+    }
+
+    console.log('🌱 Seeding database with 34 meal titles...');
 
     for (const title of MEAL_TITLES) {
       await db.query(
