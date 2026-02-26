@@ -3,6 +3,9 @@
 
 -- gen_random_uuid() is native in PG 13+ (no extension needed)
 
+-- Trigram similarity for duplicate recipe detection
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 -- Recipes table
 CREATE TABLE IF NOT EXISTS recipes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -57,6 +60,9 @@ CREATE INDEX IF NOT EXISTS idx_recipe_ingredients_recipe_id ON recipe_ingredient
 CREATE INDEX IF NOT EXISTS idx_recipe_directions_recipe_id ON recipe_directions(recipe_id);
 CREATE INDEX IF NOT EXISTS idx_recipe_categories_recipe_id ON recipe_categories(recipe_id);
 CREATE INDEX IF NOT EXISTS idx_recipe_categories_category ON recipe_categories(category);
+
+-- Trigram index for fuzzy title matching
+CREATE INDEX IF NOT EXISTS idx_recipes_title_trgm ON recipes USING gin(title gin_trgm_ops);
 
 -- Full text search on recipes
 CREATE INDEX IF NOT EXISTS idx_recipes_title_search ON recipes USING gin(to_tsvector('english', title));

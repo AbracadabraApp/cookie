@@ -5,8 +5,7 @@
 
 .demo-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
   padding: 0.6rem 1rem;
   border-bottom: none;
   position: sticky;
@@ -17,6 +16,22 @@
   margin: 0.5rem;
   z-index: 10;
 }
+
+.header-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-add-form {
+  display: flex;
+  margin-top: 0.5rem;
+}
+
+.header-add-form .inline-add-input {
+  flex: 1;
+}
+
 
 .view-nav {
   display: flex;
@@ -78,6 +93,7 @@
   font-family: inherit;
   font-size: 0.75rem;
   font-weight: 500;
+  text-transform: capitalize;
   cursor: pointer;
   min-height: 28px;
   -webkit-tap-highlight-color: transparent;
@@ -87,6 +103,14 @@
   background: #1a1a1a;
   color: #fff;
   border-color: #1a1a1a;
+}
+
+.category-chip-more {
+  background: #fff;
+  color: #1a1a1a;
+  font-weight: 650;
+  border-color: #1a1a1a;
+  border-width: 1.3px;
 }
 
 .category-chip:active {

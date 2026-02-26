@@ -22,10 +22,11 @@ describe('ShoppingList', () => {
       expect(screen.getByText(/No items yet/i)).toBeInTheDocument();
     });
 
-    it('renders add item form', () => {
-      renderShoppingList();
-      expect(screen.getByPlaceholderText(/Add item/i)).toBeInTheDocument();
-      expect(screen.getByText('+')).toBeInTheDocument();
+    it('renders need section when need items exist', () => {
+      renderShoppingList({
+        needItems: [{ name: 'pasta', quantity: null, unit: null, notes: null, recipes: ['R'], ingredientIds: ['1'] }],
+      });
+      expect(screen.getByText('Need to Get')).toBeInTheDocument();
     });
   });
 
@@ -36,7 +37,7 @@ describe('ShoppingList', () => {
         haveItems: [{ name: 'salt', quantity: null, unit: null, notes: null, recipes: ['R'], ingredientIds: ['2'] }],
       });
 
-      expect(screen.getByText('Need')).toBeInTheDocument();
+      expect(screen.getByText('Need to Get')).toBeInTheDocument();
       expect(screen.getByText('Have')).toBeInTheDocument();
     });
 
@@ -45,8 +46,8 @@ describe('ShoppingList', () => {
         needItems: [{ name: 'pasta', quantity: null, unit: null, notes: null, recipes: ['R'], ingredientIds: ['1'] }],
       });
 
-      expect(screen.getByText('Need')).toBeInTheDocument();
-      expect(screen.queryByText('Have')).not.toBeInTheDocument();
+      expect(screen.getByText('Need to Get')).toBeInTheDocument();
+      expect(screen.queryByText('Have')).toBeNull();
     });
 
     it('shows Have section when have items exist', () => {
@@ -88,61 +89,13 @@ describe('ShoppingList', () => {
     });
   });
 
-  describe('Manual Item Addition', () => {
-    it('calls onAddManualItem when form submitted', () => {
-      const onAddManualItem = vi.fn();
-      renderShoppingList({ onAddManualItem });
-
-      const input = screen.getByPlaceholderText(/Add item/i);
-      const button = screen.getByText('+');
-
-      fireEvent.change(input, { target: { value: 'paper towels' } });
-      fireEvent.click(button);
-
-      expect(onAddManualItem).toHaveBeenCalledWith('paper towels');
-    });
-
-    it('clears input after adding item', () => {
-      renderShoppingList({ onAddManualItem: vi.fn() });
-
-      const input = screen.getByPlaceholderText(/Add item/i);
-      const button = screen.getByText('+');
-
-      fireEvent.change(input, { target: { value: 'paper towels' } });
-      fireEvent.click(button);
-
-      expect(input.value).toBe('');
-    });
-
-    it('does not add empty items', () => {
-      const onAddManualItem = vi.fn();
-      renderShoppingList({ onAddManualItem });
-
-      const button = screen.getByText('+');
-      fireEvent.click(button);
-
-      expect(onAddManualItem).not.toHaveBeenCalled();
-    });
-
-    it('does not add whitespace-only items', () => {
-      const onAddManualItem = vi.fn();
-      renderShoppingList({ onAddManualItem });
-
-      const input = screen.getByPlaceholderText(/Add item/i);
-      const button = screen.getByText('+');
-
-      fireEvent.change(input, { target: { value: '   ' } });
-      fireEvent.click(button);
-
-      expect(onAddManualItem).not.toHaveBeenCalled();
-    });
-
-    it('shows manual need items in Need section', () => {
+  describe('Manual Items', () => {
+    it('shows manual need items in Need to Get section', () => {
       renderShoppingList({
         manualItems: [{ id: 'manual-1', name: 'paper towels', have: false }],
       });
 
-      expect(screen.getByText('Need')).toBeInTheDocument();
+      expect(screen.getByText('Need to Get')).toBeInTheDocument();
       expect(screen.getByText('paper towels')).toBeInTheDocument();
     });
 

@@ -1,4 +1,5 @@
 import { db, transaction } from '../db/index.js';
+import { normalizeIngredient } from '../utils/normalize.js';
 
 export class Recipe {
   // Get all recipes with counts
@@ -85,9 +86,9 @@ export class Recipe {
 
       const recipe = recipeResult.rows[0];
 
-      // Insert ingredients
+      // Insert ingredients (normalized)
       for (let i = 0; i < ingredients.length; i++) {
-        const ing = ingredients[i];
+        const ing = normalizeIngredient(ingredients[i]);
         await client.query(
           `INSERT INTO recipe_ingredients
            (recipe_id, name, quantity, unit, notes, order_index)
@@ -184,11 +185,11 @@ export class Recipe {
         );
       }
 
-      // Update ingredients if provided
+      // Update ingredients if provided (normalized)
       if (ingredients !== undefined) {
         await client.query('DELETE FROM recipe_ingredients WHERE recipe_id = $1', [id]);
         for (let i = 0; i < ingredients.length; i++) {
-          const ing = ingredients[i];
+          const ing = normalizeIngredient(ingredients[i]);
           await client.query(
             `INSERT INTO recipe_ingredients
              (recipe_id, name, quantity, unit, notes, order_index)
@@ -235,6 +236,20 @@ export class Recipe {
       [id]
     );
     return result.rows.length > 0;
+  }
+
+  // Find recipes with similar titles (for duplicate detection)
+  static async findSimilar(title, threshold = 0.3) {
+    const result = await db.query(
+      `SELECT id, title, similarity(lower(title), lower($1)) AS score
+       FROM recipes
+       WHERE similarity(lower(title), lower($1)) > $2
+          OR lower(trim(title)) = lower(trim($1))
+       ORDER BY score DESC
+       LIMIT 5`,
+      [title, threshold]
+    );
+    return result.rows;
   }
 
   // Search recipes

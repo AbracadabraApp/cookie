@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-// useRef still needed for drag
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import ShoppingList from '../components/ShoppingList';
 import './Demo.css';
 
@@ -18,8 +17,20 @@ function Demo({
   loading,
   error,
 }) {
-  const [view, setView] = useState('list');
+  const [searchParams] = useSearchParams();
+  const [view, setView] = useState(searchParams.get('view') === 'recipes' ? 'recipes' : 'list');
   const [activeCategory, setActiveCategory] = useState(null);
+  const [newItem, setNewItem] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showAllCategories, setShowAllCategories] = useState(false);
+
+  const handleAddItem = e => {
+    e.preventDefault();
+    if (newItem.trim()) {
+      onAddManualItem(newItem);
+      setNewItem('');
+    }
+  };
 
   // Collect all unique categories from recipes
   const allCategories = [...new Set(
@@ -80,6 +91,10 @@ function Demo({
   // Compute display order during drag
   const displayRecipes = (() => {
     let recipes = orderedRecipes;
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      recipes = recipes.filter(r => r.title.toLowerCase().includes(q));
+    }
     if (activeCategory) {
       recipes = recipes.filter(r => r.categories?.includes(activeCategory));
     }
@@ -95,23 +110,51 @@ function Demo({
   return (
     <div className="demo-page">
       <header className="demo-header">
-        <nav className="view-nav">
-          <button
-            className={`view-nav-item${view === 'list' ? ' active' : ''}`}
-            onClick={() => setView('list')}
-          >
-            {view === 'list' && <span className="view-nav-tri">▾</span>}List
-          </button>
-          <span className="view-nav-divider">|</span>
-          <button
-            className={`view-nav-item${view === 'recipes' ? ' active' : ''}`}
-            onClick={() => setView('recipes')}
-          >
-            {view === 'recipes' && <span className="view-nav-tri">▾</span>}Recipes
-          </button>
-        </nav>
+        <div className="header-top-row">
+          <nav className="view-nav">
+            <button
+              className={`view-nav-item${view === 'list' ? ' active' : ''}`}
+              onClick={() => setView('list')}
+            >
+              {view === 'list' && <span className="view-nav-tri">▾</span>}Lists
+            </button>
+            <span className="view-nav-divider">|</span>
+            <button
+              className={`view-nav-item${view === 'recipes' ? ' active' : ''}`}
+              onClick={() => setView('recipes')}
+            >
+              {view === 'recipes' && <span className="view-nav-tri">▾</span>}Recipes
+            </button>
+          </nav>
+          {view === 'recipes' && (
+            <Link to="/add-recipe" className="header-add-link">+ Add</Link>
+          )}
+        </div>
+        {view === 'list' && (
+          <form onSubmit={handleAddItem} className="header-add-form">
+            <input
+              type="text"
+              value={newItem}
+              onChange={e => setNewItem(e.target.value)}
+              placeholder="Add item..."
+              className="inline-add-input"
+            />
+            <button type="submit" className="inline-add-btn">+</button>
+          </form>
+        )}
         {view === 'recipes' && (
-          <Link to="/add-recipe" className="header-add-link">+ Add</Link>
+          <div className="header-add-form">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Find recipe..."
+              className="inline-add-input"
+            />
+            <button type="button" className="inline-add-btn" onClick={() => setSearchQuery('')}>
+              {searchQuery ? '×' : '+'}
+            </button>
+          </div>
         )}
       </header>
 
@@ -133,7 +176,7 @@ function Demo({
           <div className="recipes-section">
             {allCategories.length > 0 && (
               <div className="category-filters">
-                {allCategories.map(cat => (
+                {(showAllCategories ? allCategories : allCategories.slice(0, 13)).map(cat => (
                   <button
                     key={cat}
                     className={`category-chip${activeCategory === cat ? ' active' : ''}`}
@@ -142,6 +185,14 @@ function Demo({
                     {cat}
                   </button>
                 ))}
+                {!showAllCategories && allCategories.length > 13 && (
+                  <button
+                    className="category-chip category-chip-more"
+                    onClick={() => setShowAllCategories(true)}
+                  >
+                    More+
+                  </button>
+                )}
               </div>
             )}
             {displayRecipes.map((recipe, idx) => (

@@ -57,20 +57,46 @@ export async function fetchRecipeFromUrl(url) {
 }
 
 /**
- * Fetch HTML content from URL
+ * Fetch HTML content from URL with friendly error messages
  */
 async function fetchHtml(url) {
-  const response = await axios.get(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'Accept-Language': 'en-US,en;q=0.9',
-    },
-    timeout: 10000,
-    maxRedirects: 5
-  });
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+      timeout: 15000,
+      maxRedirects: 5
+    });
 
-  return response.data;
+    return response.data;
+  } catch (err) {
+    if (err.code === 'ECONNABORTED' || err.code === 'ETIMEDOUT') {
+      throw new Error('The website took too long to respond. Try again or paste the recipe text instead.');
+    }
+    if (err.code === 'ENOTFOUND') {
+      throw new Error('Could not reach that website. Please check the URL and try again.');
+    }
+    if (err.code === 'ECONNREFUSED' || err.code === 'ECONNRESET') {
+      throw new Error('Connection to the website was refused. The site may be down.');
+    }
+    if (err.response) {
+      const status = err.response.status;
+      if (status === 403 || status === 401) {
+        throw new Error('That website blocked the request. Try pasting the recipe text instead.');
+      }
+      if (status === 404) {
+        throw new Error('Page not found. Please check the URL and try again.');
+      }
+      if (status >= 500) {
+        throw new Error('That website is having issues right now. Try again later or paste the recipe text instead.');
+      }
+      throw new Error(`The website returned an error (${status}). Try pasting the recipe text instead.`);
+    }
+    throw new Error('Could not connect to that website. Please check the URL and try again.');
+  }
 }
 
 /**
@@ -144,6 +170,14 @@ function extractRecipeText(html) {
 }
 
 /**
+ * Decode HTML entities (e.g. &amp; → &) using Cheerio
+ */
+function decodeEntities(text) {
+  if (!text || typeof text !== 'string') return text;
+  return cheerio.load(`<span>${text}</span>`)('span').text();
+}
+
+/**
  * Normalize recipe from recipe-scraper format to our format
  */
 function normalizeScrapedRecipe(scraped, url) {
@@ -151,23 +185,23 @@ function normalizeScrapedRecipe(scraped, url) {
     method: 'recipe_scraper',
     url,
     needsClaude: false,
-    title: scraped.name || 'Untitled Recipe',
-    description: scraped.description || null,
+    title: decodeEntities(scraped.name) || 'Untitled Recipe',
+    description: decodeEntities(scraped.description) || null,
     prepTime: parseTime(scraped.prepTime),
     cookTime: parseTime(scraped.cookTime),
     totalTime: parseTime(scraped.totalTime),
     servings: parseServings(scraped.servings || scraped.yield),
     ingredients: (scraped.ingredients || []).map((ing, idx) => ({
-      name: typeof ing === 'string' ? ing : ing.name || ing.text,
+      name: decodeEntities(typeof ing === 'string' ? ing : ing.name || ing.text),
       quantity: null, // Will need Claude to parse
       unit: null,
       notes: null,
       order_index: idx
     })),
     directions: Array.isArray(scraped.instructions)
-      ? scraped.instructions.map(step => typeof step === 'string' ? step : step.text)
-      : [scraped.instructions],
-    categories: scraped.category ? [scraped.category] : []
+      ? scraped.instructions.map(step => decodeEntities(typeof step === 'string' ? step : step.text))
+      : [decodeEntities(scraped.instructions)],
+    categories: [scraped.category].flat().filter(Boolean)
   };
 }
 
@@ -179,14 +213,14 @@ function normalizeSchemaRecipe(schema, url) {
     method: 'schema_org',
     url,
     needsClaude: false,
-    title: schema.name || 'Untitled Recipe',
-    description: schema.description || null,
+    title: decodeEntities(schema.name) || 'Untitled Recipe',
+    description: decodeEntities(schema.description) || null,
     prepTime: parseTime(schema.prepTime),
     cookTime: parseTime(schema.cookTime),
     totalTime: parseTime(schema.totalTime),
     servings: parseServings(schema.recipeYield),
     ingredients: (schema.recipeIngredient || []).map((ing, idx) => ({
-      name: ing,
+      name: decodeEntities(ing),
       quantity: null, // Will need Claude to parse
       unit: null,
       notes: null,
@@ -194,13 +228,10 @@ function normalizeSchemaRecipe(schema, url) {
     })),
     directions: Array.isArray(schema.recipeInstructions)
       ? schema.recipeInstructions.map(step =>
-          typeof step === 'string' ? step : step.text || step.name
+          decodeEntities(typeof step === 'string' ? step : step.text || step.name)
         )
-      : [schema.recipeInstructions],
-    categories: [
-      ...(schema.recipeCategory ? [schema.recipeCategory] : []),
-      ...(schema.recipeCuisine ? [schema.recipeCuisine] : [])
-    ].filter(Boolean)
+      : [decodeEntities(schema.recipeInstructions)],
+    categories: [schema.recipeCategory, schema.recipeCuisine].flat().filter(Boolean)
   };
 }
 

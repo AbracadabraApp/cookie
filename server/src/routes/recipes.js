@@ -56,6 +56,26 @@ router.get('/', async (req, res, next) => {
   }
 });
 
+// POST /api/recipes/check-duplicate - Check for similar recipe titles
+router.post('/check-duplicate', async (req, res, next) => {
+  try {
+    const { title } = req.body;
+
+    if (!title || !title.trim()) {
+      throw new ValidationError('Title is required');
+    }
+
+    const duplicates = await Recipe.findSimilar(title.trim());
+
+    res.json({
+      success: true,
+      data: { duplicates }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET /api/recipes/:id - Get single recipe with full details
 router.get('/:id', async (req, res, next) => {
   try {
@@ -153,7 +173,12 @@ router.post('/url', async (req, res, next) => {
     }
 
     // Fetch recipe from URL
-    const fetchedRecipe = await fetchRecipeFromUrl(url);
+    let fetchedRecipe;
+    try {
+      fetchedRecipe = await fetchRecipeFromUrl(url);
+    } catch (fetchError) {
+      throw new ValidationError(fetchError.message);
+    }
 
     // If it needs Claude parsing, do that now
     if (fetchedRecipe.needsClaude) {

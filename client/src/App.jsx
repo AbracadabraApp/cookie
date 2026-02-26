@@ -10,6 +10,7 @@ import Demo from './pages/Demo';
 import RecipeDetailPage from './pages/RecipeDetailPage';
 import AddRecipePage from './pages/AddRecipePage';
 import EditRecipePage from './pages/EditRecipePage';
+import ImportRecipePage from './pages/ImportRecipePage';
 import './App.css';
 
 function App() {
@@ -71,6 +72,7 @@ function App() {
         />
         <Route path="/add-recipe" element={<AddRecipePage />} />
         <Route path="/recipe/:id/edit" element={<EditRecipePage />} />
+        <Route path="/recipe/:id/import" element={<ImportRecipePage />} />
       </Routes>
     </BrowserRouter>
   );

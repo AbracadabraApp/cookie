@@ -1,49 +1,8 @@
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { createRecipe } from '../services/api';
+import { createRecipe, updateRecipe, checkDuplicate } from '../services/api';
+import { toSnakeCase, fetchAPI, uploadFile } from '../utils/recipeImport';
 import './AddRecipePage.css';
-
-// The parse/URL endpoints return camelCase; POST /api/recipes expects snake_case
-function toSnakeCase(parsed) {
-  return {
-    title: parsed.title,
-    description: parsed.description,
-    source: parsed.source || parsed.url,
-    source_type: parsed.source_type || 'manual',
-    notes: parsed.notes,
-    prep_time: parsed.prepTime,
-    cook_time: parsed.cookTime,
-    total_time: parsed.totalTime,
-    servings: parsed.servings,
-    ingredients: parsed.ingredients,
-    directions: parsed.directions,
-    categories: parsed.categories,
-  };
-}
-
-async function fetchAPI(url, body) {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const json = await res.json();
-  if (!res.ok) {
-    throw new Error(json.error?.message || `Request failed (${res.status})`);
-  }
-  return json.data;
-}
-
-async function uploadFile(url, file) {
-  const form = new FormData();
-  form.append('file', file);
-  const res = await fetch(url, { method: 'POST', body: form });
-  const json = await res.json();
-  if (!res.ok) {
-    throw new Error(json.error?.message || `Upload failed (${res.status})`);
-  }
-  return json.data;
-}
 
 function AddRecipePage() {
   const navigate = useNavigate();
@@ -51,16 +10,70 @@ function AddRecipePage() {
   const [urlInput, setUrlInput] = useState('');
   const [inputMethod, setInputMethod] = useState('url');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [status, setStatus] = useState(null); // status banner text
   const [error, setError] = useState(null);
   const [added, setAdded] = useState(null); // { id, title }
+  const [duplicateMatches, setDuplicateMatches] = useState(null);
+  const [pendingRecipe, setPendingRecipe] = useState(null);
   const photoInputRef = useRef(null);
+
+  const doSave = async (data, title) => {
+    const saved = await createRecipe(data);
+    setAdded({ id: saved.id, title });
+    setUrlInput('');
+    setRecipeText('');
+    setDuplicateMatches(null);
+    setPendingRecipe(null);
+  };
 
   const saveRecipe = async (parsed, source, sourceType) => {
     const data = toSnakeCase({ ...parsed, source, source_type: sourceType });
-    const saved = await createRecipe(data);
-    setAdded({ id: saved.id, title: parsed.title });
-    setUrlInput('');
-    setRecipeText('');
+
+    // Check for duplicates before saving
+    const { duplicates } = await checkDuplicate(parsed.title);
+    if (duplicates.length > 0) {
+      setDuplicateMatches(duplicates);
+      setPendingRecipe({ data, title: parsed.title });
+      return;
+    }
+
+    await doSave(data, parsed.title);
+  };
+
+  const handleAddAnyway = async () => {
+    if (!pendingRecipe) return;
+    setIsProcessing(true);
+    setError(null);
+    try {
+      await doSave(pendingRecipe.data, pendingRecipe.title);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCancelDuplicate = () => {
+    setDuplicateMatches(null);
+    setPendingRecipe(null);
+  };
+
+  const handleReplace = async (existingId) => {
+    if (!pendingRecipe) return;
+    setIsProcessing(true);
+    setError(null);
+    try {
+      await updateRecipe(existingId, pendingRecipe.data);
+      setAdded({ id: existingId, title: pendingRecipe.title });
+      setUrlInput('');
+      setRecipeText('');
+      setDuplicateMatches(null);
+      setPendingRecipe(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleUrlSubmit = async e => {
@@ -73,14 +86,17 @@ function AddRecipePage() {
     setIsProcessing(true);
     setError(null);
     setAdded(null);
+    setStatus('Fetching recipe from URL...');
 
     try {
       const data = await fetchAPI('/api/recipes/url', { url: urlInput });
+      setStatus(`Found "${data.title}" — saving...`);
       await saveRecipe(data, urlInput, 'url');
     } catch (err) {
       setError(err.message);
     } finally {
       setIsProcessing(false);
+      setStatus(null);
     }
   };
 
@@ -94,14 +110,17 @@ function AddRecipePage() {
     setIsProcessing(true);
     setError(null);
     setAdded(null);
+    setStatus('Extracting recipe from text...');
 
     try {
       const data = await fetchAPI('/api/recipes/parse', { text: recipeText });
+      setStatus(`Found "${data.title}" — saving...`);
       await saveRecipe(data, 'Manual', 'paste');
     } catch (err) {
       setError(err.message);
     } finally {
       setIsProcessing(false);
+      setStatus(null);
     }
   };
 
@@ -117,14 +136,17 @@ function AddRecipePage() {
     setIsProcessing(true);
     setError(null);
     setAdded(null);
+    setStatus('Extracting recipe from photo...');
 
     try {
       const parsed = await uploadFile('/api/recipes/photo', file);
+      setStatus(`Found "${parsed.title}" — saving...`);
       await saveRecipe(parsed, 'Photo', 'photo');
     } catch (err) {
       setError(err.message);
     } finally {
       setIsProcessing(false);
+      setStatus(null);
       if (photoInputRef.current) photoInputRef.current.value = '';
     }
   };
@@ -141,14 +163,17 @@ function AddRecipePage() {
     setIsProcessing(true);
     setError(null);
     setAdded(null);
+    setStatus('Extracting recipe from PDF...');
 
     try {
       const parsed = await uploadFile('/api/recipes/pdf', file);
+      setStatus(`Found "${parsed.title}" — saving...`);
       await saveRecipe(parsed, 'PDF', 'pdf');
     } catch (err) {
       setError(err.message);
     } finally {
       setIsProcessing(false);
+      setStatus(null);
     }
   };
 
@@ -164,9 +189,50 @@ function AddRecipePage() {
           <p>Choose how you'd like to add your recipe</p>
         </header>
 
+        {status && (
+          <div className="status-message">{status}</div>
+        )}
+
         {added && (
           <div className="success-message">
             Added <Link to={`/recipe/${added.id}`}>{added.title}</Link>
+          </div>
+        )}
+
+        {duplicateMatches && (
+          <div className="duplicate-warning">
+            <div className="duplicate-warning-header">
+              <p className="duplicate-warning-title">Similar recipe found</p>
+              <button
+                type="button"
+                className="duplicate-close"
+                onClick={handleCancelDuplicate}
+                aria-label="Dismiss"
+              >&times;</button>
+            </div>
+            {duplicateMatches.map(d => (
+              <div key={d.id} className="duplicate-match">
+                <Link to={`/recipe/${d.id}`} className="duplicate-match-title">{d.title}</Link>
+                <div className="duplicate-match-actions">
+                  <button
+                    type="button"
+                    className="duplicate-action replace-button"
+                    onClick={() => handleReplace(d.id)}
+                    disabled={isProcessing}
+                  >
+                    Replace
+                  </button>
+                  <button
+                    type="button"
+                    className="duplicate-action add-anyway-button"
+                    onClick={handleAddAnyway}
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? 'Saving...' : 'Add as New'}
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
