@@ -38,18 +38,20 @@ async function migrate() {
       console.log('✅ Categories fixed');
     }
 
-    // Normalize category names
+    // Normalize category names: delete old variants that would conflict, then rename remaining
     const renames = { 'main course': 'Dinner', 'dinner': 'Dinner', 'lunch': 'Lunch', 'easy': 'Easy', 'quick': 'Quick' };
     for (const [from, to] of Object.entries(renames)) {
+      // Delete rows that would conflict (recipe already has the target category)
+      await db.query(`
+        DELETE FROM recipe_categories rc
+        WHERE lower(rc.category) = $1 AND rc.category != $2
+          AND EXISTS (SELECT 1 FROM recipe_categories rc2 WHERE rc2.recipe_id = rc.recipe_id AND rc2.category = $2)
+      `, [from, to]);
+      // Rename remaining
       await db.query(
         `UPDATE recipe_categories SET category = $1 WHERE lower(category) = $2 AND category != $1`,
         [to, from]
       );
-      // Remove duplicates created by rename
-      await db.query(`
-        DELETE FROM recipe_categories a USING recipe_categories b
-        WHERE a.recipe_id = b.recipe_id AND a.category = b.category AND a.id > b.id
-      `);
     }
     process.exit(0);
   } catch (error) {
