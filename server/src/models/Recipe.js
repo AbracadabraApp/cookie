@@ -8,7 +8,12 @@ export class Recipe {
       SELECT * FROM recipes_with_counts
       ORDER BY created_at DESC
     `);
-    return result.rows;
+    return result.rows.map(row => ({
+      ...row,
+      categories: row.categories
+        ? row.categories.flatMap(c => c.split(',').map(s => s.trim())).filter(Boolean)
+        : null
+    }));
   }
 
   // Get single recipe with full details
@@ -53,7 +58,9 @@ export class Recipe {
       ...recipe,
       ingredients: ingredientsResult.rows,
       directions: directionsResult.rows.map(r => r.instruction),
-      categories: categoriesResult.rows.map(r => r.category)
+      categories: categoriesResult.rows
+        .flatMap(r => r.category.split(',').map(s => s.trim()))
+        .filter(Boolean)
     };
   }
 
@@ -107,8 +114,9 @@ export class Recipe {
         );
       }
 
-      // Insert categories
-      for (const category of categories) {
+      // Insert categories (split any comma-separated values)
+      const splitCats = categories.flatMap(c => c.split(',').map(s => s.trim())).filter(Boolean);
+      for (const category of splitCats) {
         await client.query(
           `INSERT INTO recipe_categories
            (recipe_id, category)
@@ -212,10 +220,11 @@ export class Recipe {
         }
       }
 
-      // Update categories if provided
+      // Update categories if provided (split any comma-separated values)
       if (categories !== undefined) {
         await client.query('DELETE FROM recipe_categories WHERE recipe_id = $1', [id]);
-        for (const category of categories) {
+        const splitCats = categories.flatMap(c => c.split(',').map(s => s.trim())).filter(Boolean);
+        for (const category of splitCats) {
           await client.query(
             `INSERT INTO recipe_categories
              (recipe_id, category)
